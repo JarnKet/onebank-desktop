@@ -4,9 +4,9 @@
  * `approveruserids` and `limit.amount`.
  *
  * A role cannot be changed: the core creates and removes one, so the card opens
- * a read-only detail and only creating goes through the editor — behind
- * TWOFACTOR, whose proof rides along with `addpermission` exactly as
- * onebank-ui's ROLE sends it.
+ * a read-only detail and only creating goes through the wizard — five steps,
+ * three when view-only — ending behind TWOFACTOR, whose proof rides along with
+ * `addpermission` exactly as onebank-ui's ROLE sends it.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -45,6 +45,11 @@ function button(label: string): HTMLButtonElement | null {
 
 function labelled(text: string, within: ParentNode = host): HTMLButtonElement {
   return [...within.querySelectorAll('button')].find((element) => element.textContent?.trim() === text) as HTMLButtonElement
+}
+
+/** A chip carries an avatar's initials before its name, so match loosely. */
+function chip(text: string, within: ParentNode = host): HTMLButtonElement {
+  return [...within.querySelectorAll('button')].find((element) => element.textContent?.includes(text)) as HTMLButtonElement
 }
 
 function dialog(): HTMLElement {
@@ -170,17 +175,148 @@ describe('the roles it lists', () => {
 })
 
 describe('creating a role', () => {
-  /** Fills the editor and presses Save, stopping at the verification overlay. */
-  async function fillNewRole(viewonly: boolean): Promise<void> {
+  function pills(): HTMLElement[] {
+    return [...host.querySelectorAll<HTMLElement>('ol[aria-label="Progress"] > li')]
+  }
+
+  function current(): string {
+    return pills().find((pill) => pill.getAttribute('aria-current') === 'step')?.textContent?.trim() ?? ''
+  }
+
+  /** Picks the one account and the member who is not the approver. */
+  async function fillFirstStep(): Promise<void> {
     labelled('New role').click()
-    await tick()
-    host.querySelectorAll<HTMLInputElement>('input[name="permissionType"]')[viewonly ? 0 : 1].click()
     await tick()
     ;(host.querySelector('input[name="account"]') as HTMLInputElement).click()
     await tick()
+    chip('Vilay Keo').click()
+    await tick()
+  }
+
+  /** Walks the whole wizard and presses Save, stopping at the verification overlay. */
+  async function fillNewRole(viewonly: boolean): Promise<void> {
+    await fillFirstStep()
+    labelled('Next').click()
+    await tick()
+    host.querySelectorAll<HTMLInputElement>('input[name="permissionType"]')[viewonly ? 0 : 1].click()
+    await tick()
+    labelled('Next').click()
+    await tick()
+    if (!viewonly) {
+      labelled('Next').click() // functions: every function, by default
+      await tick()
+      labelled('Next').click() // limits and approval: neither set
+      await tick()
+      labelled('Continue', dialog()).click() // the no-limit warning
+      await tick()
+    }
     labelled('Save').click()
     await flush()
   }
+
+  it('walks five steps to transact and three to view only', async () => {
+    await fillFirstStep()
+    expect(pills()).toHaveLength(5)
+
+    labelled('Next').click()
+    await tick()
+    host.querySelectorAll<HTMLInputElement>('input[name="permissionType"]')[0].click()
+    await tick()
+
+    expect(pills()).toHaveLength(3)
+    expect(current()).toContain('Permission type')
+  })
+
+  it('will not leave the first step without an account and a member', async () => {
+    labelled('New role').click()
+    await tick()
+    labelled('Next').click()
+    await tick()
+    expect(host.textContent).toContain('Choose at least one account')
+
+    ;(host.querySelector('input[name="account"]') as HTMLInputElement).click()
+    await tick()
+    labelled('Next').click()
+    await tick()
+    expect(host.textContent).toContain('Choose at least one member')
+    expect(current()).toContain('Accounts & members')
+  })
+
+  it('warns that nobody is left to approve when every member holds the role', async () => {
+    await fillFirstStep()
+    chip('Souk Vong').click()
+    await tick()
+    labelled('Next').click()
+    await tick()
+
+    expect(dialog().textContent).toContain('Nobody is left to approve')
+
+    labelled('Continue', dialog()).click()
+    await tick()
+    expect(current()).toContain('Permission type')
+  })
+
+  it('drops the approval levels when every member is added to the role', async () => {
+    await fillFirstStep()
+    labelled('Next').click()
+    await tick()
+    host.querySelectorAll<HTMLInputElement>('input[name="permissionType"]')[1].click()
+    await tick()
+    labelled('Next').click() // functions
+    await tick()
+    labelled('Next').click() // limits and approval
+    await tick()
+    labelled('Require approval').click()
+    await tick()
+    chip('Souk Vong').click() // the only member who does not hold the role
+    await tick()
+
+    // Back to the first step, and hand the role to everyone.
+    labelled('Back').click()
+    await tick()
+    labelled('Back').click()
+    await tick()
+    labelled('Back').click()
+    await tick()
+    chip('Souk Vong').click()
+    await tick()
+    labelled('Next').click()
+    await tick()
+    labelled('Continue', dialog()).click()
+    await tick()
+
+    labelled('Next').click() // functions
+    await tick()
+    labelled('Next').click() // limits and approval
+    await tick()
+    labelled('Next').click()
+    await tick()
+    labelled('Continue', dialog()).click() // the no-limit warning
+    await flush()
+    labelled('Save').click()
+    await flush()
+    closePopup({ isVerified: true, type: 'question', ticket: 'TCK-4' })
+    await flush()
+
+    const { permission } = callsTo('addpermission')[0]
+    expect(permission).not.toHaveProperty('approverlevels')
+    expect(permission.userids).toHaveLength(2)
+  })
+
+  it('reviews what it will send before asking for verification', async () => {
+    await fillFirstStep()
+    labelled('Next').click()
+    await tick()
+    host.querySelectorAll<HTMLInputElement>('input[name="permissionType"]')[0].click()
+    await tick()
+    labelled('Next').click()
+    await tick()
+
+    expect(current()).toContain('Review')
+    expect(host.textContent).toContain('Vilay Keo')
+    expect(host.textContent).toContain('OPS FUND')
+    expect(get(popups)).toHaveLength(0)
+  })
 
   function verifyWith(result: unknown): Promise<void> {
     closePopup(result)

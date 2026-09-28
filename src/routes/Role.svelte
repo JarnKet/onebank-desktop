@@ -1,31 +1,26 @@
 <script lang="ts">
     /**
      * Managing the group's roles ("ຈັດການສິດທິ"): each role as a card with what
-     * it covers at a glance, the full editor for creating one, and a read-only
-     * detail for a role that exists — the core can create and remove a role,
-     * never change one, so nothing here edits.
+     * it covers at a glance, a wizard for creating one, and a read-only detail
+     * for a role that exists — the core can create and remove a role, never
+     * change one, so nothing here edits.
      */
     import Icon from '@iconify/svelte';
-    import PermissionEditor from '../lib/components/PermissionEditor.svelte';
     import ConfirmDialog from './account/ConfirmDialog.svelte';
+    import RoleSummary from './role/RoleSummary.svelte';
+    import RoleWizard from './role/RoleWizard.svelte';
     import {getPermissions, removePermission} from '../lib/api/commands';
-    import {addPermission} from '../lib/api/unmapped';
-    import {proofOf, verifyIdentity} from '../lib/twoFactor';
     import type {Permission} from '../lib/api/types';
-    import {initials, maskAccount, money, t} from '../lib/utils/helper';
+    import {initials, t} from '../lib/utils/helper';
     import {currentGroup, loadHomeResult} from '../stores/onebankGroups';
-    import {menus, offeredMenus} from '../lib/menus';
-
-    /** What onebank-ui grants a view-only role, verbatim. */
-    const VIEW_ONLY_FUNCTIONS = 'CARDINFO,HISTORY,STATEMENT,CHAT,MESSAGE';
+    import {offeredMenus} from '../lib/menus';
 
     let permissions = $state<Permission[]>([]);
     let loading = $state(false);
     let error = $state('');
     let notice = $state('');
-    let creating = $state<Permission | null>(null);
+    let creating = $state(false);
     let viewing = $state<Permission | null>(null);
-    let saving = $state(false);
     let removing = $state<Permission | null>(null);
     let removeBusy = $state(false);
 
@@ -56,32 +51,8 @@
         void load($currentGroup);
     });
 
-    function startNew() {
-        notice = '';
-        viewing = null;
-        creating = {name: '', accountids: [], userids: [], allowedfunctions: '*', viewonly: false, approverlevels: []};
-    }
-
-    async function create() {
-        if (!creating) return;
-        if ((creating.accountids ?? []).length === 0) {
-            error = t('Choose at least one account', 'ກະລຸນາເລືອກຢ່າງໜ້ອຍໜຶ່ງບັນຊີ');
-            return;
-        }
-        error = '';
-        const verified = await verifyIdentity();
-        if (!verified) {
-            error = t('Identity was not verified, so the role was not created', 'ບໍ່ໄດ້ຢືນຢັນຕົວຕົນ ຈຶ່ງບໍ່ໄດ້ສ້າງສິດທິ');
-            return;
-        }
-        saving = true;
-        const response = await addPermission(wirePermission($state.snapshot(creating) as Permission), proofOf(verified));
-        saving = false;
-        if (response.result !== 0) {
-            error = response.message || t('Could not save the role', 'ບັນທຶກສິດທິບໍ່ໄດ້');
-            return;
-        }
-        creating = null;
+    async function saved() {
+        creating = false;
         notice = t('Role saved', 'ບັນທຶກສິດທິແລ້ວ');
         await load($currentGroup);
     }
@@ -101,25 +72,6 @@
         await load($currentGroup);
     }
 
-    /**
-     * What goes on the wire, as onebank-ui's ROLE builds it: a view-only role
-     * carries its own fixed function list and nothing else, an empty level list
-     * is left out rather than sent, and `name` is ours — the core has no such
-     * field and answers none.
-     */
-    function wirePermission(draft: Permission): Permission {
-        const permission: Permission = {...draft, accountids: draft.accountids ?? [], userids: draft.userids ?? []};
-        if (permission.viewonly) {
-            permission.allowedfunctions = VIEW_ONLY_FUNCTIONS;
-            delete permission.limit;
-            delete permission.approverlevels;
-            return permission;
-        }
-        if (!permission.approverlevels?.length) delete permission.approverlevels;
-        if (permission.limit && !Object.values(permission.limit).some((cap) => cap)) delete permission.limit;
-        return permission;
-    }
-
     function functionCount(permission: Permission): string {
         if (!permission.allowedfunctions || permission.allowedfunctions === '*') return t('Every function', 'ໃຊ້ໄດ້ທຸກຟັງຊັ່ນ');
         const count = permission.allowedfunctions.split(',').filter(Boolean).length;
@@ -130,41 +82,12 @@
         return permission.name || t('Account access', 'ສິດນຳໃຊ້ບັນຊີ');
     }
 
-    function chosenFunctions(permission: Permission): string[] {
-        if (!permission.allowedfunctions || permission.allowedfunctions === '*') return [];
-        return permission.allowedfunctions.split(',').filter(Boolean);
-    }
-
     function usersOf(userids: string[] | undefined) {
         return members.filter((member) => (userids ?? []).includes(member.userid));
     }
 
     function coveredAccounts(permission: Permission) {
         return accounts.filter((account) => (permission.accountids ?? []).includes(account.accountid));
-    }
-
-    /** The caps the core carries, in the order the design lists them. */
-    function limitRows(permission: Permission): Array<{label: string; value: number | string}> {
-        const rows: Array<{label: string; value: number | string}> = [];
-        const caps: Array<['amount' | 'daily' | 'weekly' | 'monthly', string]> = [
-            ['amount', t('Per transaction', 'ຈຳກັດວົງເງິນຕໍ່ທຸລະກຳ')],
-            ['daily', t('Per day', 'ຈຳກັດວົງເງິນຕໍ່ມື້')],
-            ['weekly', t('Per week', 'ຈຳກັດວົງເງິນຕໍ່ອາທິດ')],
-            ['monthly', t('Per month', 'ຈຳກັດວົງເງິນຕໍ່ເດືອນ')],
-        ];
-        for (const [key, label] of caps) {
-            const value = permission.limit?.[key];
-            if (value) rows.push({label, value});
-        }
-        return rows;
-    }
-
-    /** No "everyone" flag on the wire: it is a count equal to the approvers. */
-    function approvalRule(level: {approvernumber?: number; approveruserids?: string[]}): string {
-        const approvers = (level.approveruserids ?? []).length;
-        const needed = level.approvernumber || approvers;
-        if (needed >= approvers) return t('Everyone must approve', 'ຕ້ອງອະນຸມັດທຸກຄົນ');
-        return t(`At least ${needed} of ${approvers}`, `ຕ້ອງອະນຸມັດຢ່າງຕ່ຳ ${needed} ໃນ ${approvers} ຄົນ`);
     }
 </script>
 
@@ -173,17 +96,7 @@
     {#if notice}<div class="rounded-ob-sm bg-green-50 p-3 text-sm text-green-700" role="status">{notice}</div>{/if}
 
     {#if creating}
-        <div class="flex items-center gap-2">
-            <button type="button" class="rounded-full p-1 hover:bg-white" aria-label={t('Back', 'ກັບຄືນ')} onclick={() => (creating = null)}>
-                <Icon icon="mdi:arrow-left" class="h-6 w-6"/>
-            </button>
-            <h1 class="text-2xl font-semibold">{t('New role', 'ສ້າງສິດທິໃໝ່')}</h1>
-        </div>
-        <PermissionEditor bind:permission={creating} {accounts} {members} {functions}/>
-        <div class="flex justify-center gap-3 pt-4">
-            <button type="button" class="onebank-secondary-btn" onclick={() => (creating = null)} disabled={saving}>{t('Cancel', 'ຍົກເລີກ')}</button>
-            <button type="button" class="onebank-primary-btn" onclick={create} disabled={saving}>{saving ? t('Saving…', 'ກຳລັງບັນທຶກ…') : t('Save', 'ບັນທຶກ')}</button>
-        </div>
+        <RoleWizard {accounts} {members} {functions} onCancel={() => (creating = false)} onSaved={saved}/>
     {:else if viewing}
         {@const role = viewing}
         <div class="flex items-center gap-2">
@@ -193,102 +106,7 @@
             <h1 class="truncate text-2xl font-semibold">{roleName(role)}</h1>
         </div>
         <div class="ob-card space-y-6 p-5">
-            <p class="flex items-center gap-2 text-sm text-onebank-subtle">
-                <Icon icon={role.viewonly ? 'mdi:eye-outline' : 'mdi:swap-horizontal'} class="h-5 w-5"/>
-                {role.viewonly ? t('Can see the accounts and their movements', 'ສາມາດກວດເບິ່ງການເຄື່ອນໄຫວຂອງບັນຊີໄດ້') : t('Can move money from the accounts', 'ສາມາດເຄື່ອນໄຫວບັນຊີໄດ້')}
-            </p>
-
-            <section>
-                <h2 class="mb-2 text-lg font-semibold">{t('Accounts it covers', 'ບັນຊີທີ່ໃຊ້ໄດ້')}</h2>
-                <ul class="divide-y divide-onebank-row">
-                    {#each coveredAccounts(role) as account (account.accountid)}
-                        <li class="flex items-center gap-3 py-2">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-onebank-light-grey-4 text-[10px] font-semibold text-white">{initials(account.alias || account.name)}</span>
-                            <span class="min-w-0 flex-1">
-                                <span class="block truncate text-sm font-semibold">{maskAccount(account.account)}</span>
-                                <span class="block truncate text-xs text-onebank-subtle">{account.name}</span>
-                            </span>
-                            <span class="text-xs">{account.ccy}</span>
-                        </li>
-                    {:else}
-                        <li class="py-2 text-sm text-onebank-subtle">{t('No accounts', 'ບໍ່ມີບັນຊີ')}</li>
-                    {/each}
-                </ul>
-            </section>
-
-            {#if !role.viewonly}
-                <section>
-                    <h2 class="mb-2 text-lg font-semibold">{t('Functions it can use', 'ຟັງຊັ່ນທີ່ໃຊ້ໄດ້')}</h2>
-                    {#if chosenFunctions(role).length === 0}
-                        <p class="text-sm text-onebank-subtle">{t('Every function', 'ໃຊ້ໄດ້ທຸກຟັງຊັ່ນ')}</p>
-                    {:else}
-                        <ul class="flex flex-wrap gap-2 text-xs">
-                            {#each chosenFunctions(role) as key (key)}
-                                <li class="flex items-center gap-2 rounded-full bg-onebank-blue-soft px-3 py-1 text-onebank-blue">
-                                    {#if menus[key]?.filename}<img src="img/{menus[key].filename}" alt="" class="h-4 w-4 object-contain"/>{/if}
-                                    {menus[key]?.name ?? key}
-                                </li>
-                            {/each}
-                        </ul>
-                    {/if}
-                </section>
-
-                {#if limitRows(role).length}
-                    <section>
-                        <h2 class="mb-2 text-lg font-semibold">{t('Spending limits', 'ການຈຳກັດວົງເງິນ')}</h2>
-                        <dl class="divide-y divide-onebank-row text-sm">
-                            {#each limitRows(role) as row (row.label)}
-                                <div class="flex items-center justify-between py-2">
-                                    <dt class="text-onebank-subtle">{row.label}</dt>
-                                    <dd class="font-semibold tabular-nums">{money(row.value, 'LAK')}</dd>
-                                </div>
-                            {/each}
-                        </dl>
-                    </section>
-                {/if}
-
-                <section>
-                    <h2 class="mb-2 text-lg font-semibold">{t('Approval', 'ການອະນຸມັດທຸລະກຳ')}</h2>
-                    {#if !role.approverlevels?.length}
-                        <p class="text-sm text-onebank-subtle">{t('Transactions execute without approval', 'ສ້າງລາຍການແລ້ວສຳເລັດທັນທີ')}</p>
-                    {:else}
-                        <div class="space-y-3">
-                            {#each role.approverlevels as level, index (index)}
-                                <div class="rounded-ob-lg border border-onebank-row p-4">
-                                    <div class="mb-2 flex flex-wrap items-center gap-3">
-                                        <span class="font-semibold">{t(`Level ${index + 1}`, `ອະນຸມັດຂັ້ນທີ ${index + 1}`)}</span>
-                                        <span class="rounded-full bg-onebank-pink px-3 py-1 text-xs font-medium text-onebank-red">{approvalRule(level)}</span>
-                                    </div>
-                                    <ul class="flex flex-wrap gap-2">
-                                        {#each usersOf(level.approveruserids) as approver (approver.userid)}
-                                            <li class="flex items-center gap-2 rounded-full border border-onebank-light-grey-4 py-1 pl-1 pr-3 text-xs">
-                                                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-onebank-light-grey-4 text-[9px] font-semibold text-white">{initials(approver.name)}</span>
-                                                {approver.name}
-                                            </li>
-                                        {/each}
-                                    </ul>
-                                </div>
-                            {/each}
-                        </div>
-                    {/if}
-                </section>
-            {/if}
-
-            <section>
-                <h2 class="mb-2 text-lg font-semibold">{t('Members with this role', 'ສະມາຊິກ')}</h2>
-                <ul class="flex flex-wrap gap-2">
-                    {#each usersOf(role.userids) as holder (holder.userid)}
-                        <li class="flex items-center gap-2 rounded-full border border-onebank-light-grey-4 bg-white py-1 pl-1 pr-3 text-sm">
-                            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-onebank-light-grey-4 text-[10px] font-semibold text-white">{initials(holder.name)}</span>
-                            {holder.name}
-                        </li>
-                    {:else}
-                        <li class="text-sm text-onebank-subtle">{t('Nobody holds this role', 'ຍັງບໍ່ມີສະມາຊິກໃນສິດນີ້')}</li>
-                    {/each}
-                </ul>
-            </section>
-
-            <p class="text-sm text-onebank-subtle">{t('A role cannot be changed once created. Delete it and create the one you need.', 'ສິດທິທີ່ສ້າງແລ້ວ ແກ້ໄຂບໍ່ໄດ້. ກະລຸນາລຶບ ແລ້ວສ້າງໃໝ່ຕາມທີ່ຕ້ອງການ.')}</p>
+            <RoleSummary {role} {accounts} {members}/>
 
             {#if isOwner}
                 <div class="flex justify-center pt-2">
@@ -302,7 +120,7 @@
         <div class="flex flex-wrap items-center gap-3">
             <h1 class="mr-auto text-2xl font-semibold">{t('Manage permissions', 'ຈັດການສິດທິ')}</h1>
             {#if isOwner}
-                <button type="button" class="onebank-primary-btn" onclick={startNew}>
+                <button type="button" class="onebank-primary-btn" onclick={() => ((creating = true), (notice = ''))}>
                     <Icon icon="mdi:plus-circle" class="h-5 w-5"/>{t('New role', 'ສ້າງສິດທິໃໝ່')}
                 </button>
             {/if}

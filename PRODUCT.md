@@ -43,7 +43,7 @@ Lao is the primary language; English, Chinese and Vietnamese are also available.
 | Create OneBank | `/register` | **Native**: intro → terms → accounts → group details |
 | Join / leave a group | `/group/join`, `/group/leave` | **Native**: show a join code and wait for the owner (socket); leave with a warning |
 | Pending authorization | `/authorization`, `/authorization/history` | **Native**; approve / reject / cancel fall back to local data |
-| Manage permissions | `/role` | **Native** on `getpermissions`: a role is created (`addpermission`, behind TWOFACTOR) or deleted, and read in a detail — the core has no command for changing one, so nothing edits a role. Creating falls back to local data while the core refuses it |
+| Manage permissions | `/role` | **Native** on `getpermissions`: a role is created (`addpermission`, behind TWOFACTOR) or deleted, and read in a detail — the core has no command for changing one, so nothing edits a role. Creating runs as a wizard — accounts and members, permission type, then functions, limits and approval when it can transact, and a review — because the only way to correct a role is to delete it. Creating falls back to local data while the core refuses it |
 | Statement | `/statement` | **Native** on the core's own `STATEMENT/statement`: a date range walked page by page, searchable; exported as the PDF or Excel file the core renders, or drawn in the browser for a shadow account, which the core does not render |
 | Transfer, international, ID card | `/transfer`, `/transfer/interbank`, `/transfer/idcard` | **Native**; submitting falls back to local data |
 | Salary, E-Cheque | `/salary`, `/echeque` | **Native**; falls back to local data |
