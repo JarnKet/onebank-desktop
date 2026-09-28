@@ -2,7 +2,8 @@
  * The sidebar's badge counts, read from the core — never hardcoded (the old
  * sidebar carried a literal `notifications: 2` whatever the data said).
  *
- * - Pending authorization: the items `getpendingapprovals` returns.
+ * - Pending authorization: the `getpendingapprovals` items still waiting —
+ *   the core also returns EXPIRED ones, which need no decision.
  * - Messages: the core contract has no read/unread state, so there is no
  *   honest count to show; `unreadCount` stays 0 and the badge stays hidden
  *   until such a command exists.
@@ -26,7 +27,8 @@ export async function refreshBadges(onebankid: string = get(currentGroup)): Prom
   if (!onebankid) return
   try {
     const pending = await getPendingApprovals(onebankid)
-    pendingCount.set(pending?.result === 0 ? (pending.items ?? []).length : 0)
+    const items = pending?.result === 0 ? (pending.items ?? []) : []
+    pendingCount.set(items.filter((tx) => tx.status === 'PENDING').length)
   } catch {
     // A badge is decoration; a failed count must not break the shell.
   }
