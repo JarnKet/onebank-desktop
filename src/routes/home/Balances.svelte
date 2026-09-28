@@ -32,7 +32,7 @@
         <button type="button" aria-expanded={!collapsed} aria-label={t('Toggle', 'ສະແດງ/ເຊື່ອງ')} onclick={() => (collapsed = !collapsed)}>
             <Icon icon="mdi:chevron-down" class="h-5 w-5 transition-transform {collapsed ? '-rotate-90' : ''}"/>
         </button>
-        <h2 class="flex-1 text-center text-sm font-bold">{t('Account balances', 'ຍອດເງິນໃນບັນຊີ')}</h2>
+        <h2 class="flex-1 text-center text-xl font-bold">{t('Account balances', 'ຍອດເງິນໃນບັນຊີ')}</h2>
         <span class="w-5"></span>
     </header>
     {#if !collapsed}
@@ -45,18 +45,18 @@
                 <li class="flex items-center gap-3 rounded-ob-sm bg-onebank-page px-3 py-2">
                     <CcyBadge ccy={balance.ccy}/>
                     <div class="min-w-0 flex-1">
-                        <p class="truncate text-xs font-semibold">{maskAccount(balance.account)}</p>
+                        <p class="truncate text-sm font-semibold">{maskAccount(balance.account)}</p>
                         <p class="truncate text-xs text-onebank-subtle">{balance.name}</p>
                         <div class="mt-0.5 flex gap-1.5">
-                            {#if typeOf(balance.account)}<span class="text-[10px] font-medium">{typeOf(balance.account)}</span>{/if}
-                            <span class="rounded px-1.5 text-[10px] font-medium {status === 'LOCKED' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'}">
+                            {#if typeOf(balance.account)}<span class="text-xs font-medium">{typeOf(balance.account)}</span>{/if}
+                            <span class="rounded px-1.5 text-xs font-medium {status === 'LOCKED' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'}">
                                 {status === 'LOCKED' ? t('Locked', 'ລັອກ') : t('Active', 'ໃຊ້ງານ')}
                             </span>
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm font-bold tabular-nums">{formatMoney(balance.availablebalance)}</p>
-                        <p class="text-[10px] font-semibold text-onebank-blue">{balance.ccy}</p>
+                        <p class="text-base font-bold tabular-nums">{formatMoney(balance.availablebalance)}</p>
+                        <p class="text-xs font-semibold text-onebank-blue">{balance.ccy}</p>
                     </div>
                 </li>
             {/each}

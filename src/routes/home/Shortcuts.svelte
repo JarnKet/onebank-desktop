@@ -30,7 +30,7 @@
         </button>
     {/each}
     <button type="button" onclick={onAdd}
-            class="flex h-[146px] flex-col items-center justify-center gap-3 rounded-ob-xl bg-white/70 px-2 text-center text-lg transition-colors hover:bg-white">
+            class="flex h-[146px] flex-col items-center justify-center gap-3 rounded-ob-xl bg-white/70 px-2 text-center text-base transition-colors hover:bg-white">
         <img src="img/ob/ic-plus.svg" alt="" class="h-10 w-10"/>
         {t('Add shortcut', 'ເພີ່ມຟັງຊັ່ນລັດ')}
     </button>

@@ -26,7 +26,7 @@
         <span class="sr-only">{t('Search services', 'ຄົ້ນຫາຟັງຊັ່ນ')}</span>
         <img src="img/ob/ic-search.svg" alt="" class="pointer-events-none absolute left-4 top-1/2 h-7 w-7 -translate-y-1/2"/>
         <input type="search" bind:value={search} placeholder={t('Search services', 'ຄົ້ນຫາຟັງຊັ່ນ')}
-               class="h-[52px] w-full rounded-ob-xl border border-onebank-ink bg-white pl-14 pr-4 text-center text-xl placeholder:text-onebank-muted focus:border-onebank-red focus:ring-onebank-red"/>
+               class="h-[52px] w-full rounded-ob-xl border border-onebank-ink bg-white pl-14 pr-4 text-center text-base placeholder:text-onebank-muted focus:border-onebank-red focus:ring-onebank-red"/>
     </label>
 
     {#if shown.length === 0}

@@ -50,13 +50,13 @@
         <button type="button" class="onebank-primary-btn" onclick={() => loadGroupHome($currentGroup, true)}>{t('Try again', 'ລອງໃໝ່')}</button>
     </div>
 {:else if !$loadHomeResult}
-    <div class="grid gap-3 desktop:grid-cols-[minmax(0,1fr)_434px]" aria-busy="true">
+    <div class="grid gap-4 desktop:grid-cols-[minmax(0,1fr)_434px]" aria-busy="true">
         <div class="h-[414px] animate-pulse rounded-ob-xl bg-white"></div>
         <div class="hidden h-[414px] animate-pulse rounded-ob-xl bg-white desktop:block"></div>
     </div>
 {:else}
-    <div class="grid items-start gap-3 desktop:grid-cols-[minmax(0,1fr)_434px]">
-        <div class="flex min-w-0 flex-col gap-3">
+    <div class="grid items-start gap-4 desktop:grid-cols-[minmax(0,1fr)_434px]">
+        <div class="flex min-w-0 flex-col gap-4">
             <svelte:boundary>
                 <SpendChart/>
                 {#snippet failed()}<div class="ob-card p-6 text-sm text-onebank-subtle">{t('This chart could not be shown.', 'ບໍ່ສາມາດສະແດງກາຟນີ້ໄດ້.')}</div>{/snippet}
@@ -64,7 +64,7 @@
             <Shortcuts onAdd={() => (customizing = true)}/>
             <Services/>
         </div>
-        <div class="flex min-w-0 flex-col gap-3">
+        <div class="flex min-w-0 flex-col gap-4">
             <svelte:boundary>
                 <SpendShare/>
                 {#snippet failed()}<div class="ob-card p-6 text-sm text-onebank-subtle">{t('This chart could not be shown.', 'ບໍ່ສາມາດສະແດງກາຟນີ້ໄດ້.')}</div>{/snippet}

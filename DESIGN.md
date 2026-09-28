@@ -64,14 +64,19 @@ Role chips:
 
 The type scale follows the frames:
 
-| Size | Used for |
-|---|---|
-| 20px bold | Card titles, the calendar month, primary button labels |
-| 16px | Body, nav items, tile labels |
-| 14px | Secondary lines |
-| 12px | Chips and meta |
+| Size | Tailwind | Used for |
+|---|---|---|
+| 20px bold | `text-xl` | Card titles and the calendar month — every card at the same level uses it |
+| 16px | `text-base` | Body, nav items, tile labels, button labels, inputs, the amount in a list row |
+| 14px | `text-sm` | Secondary lines, an account number under a name |
+| 12px | `text-xs` | Chips and meta — the floor, nothing smaller |
 
 Amounts always use `tabular-nums`.
+
+**Four sizes, and only these four.** `text-lg` (18px) and `text-2xl` (24px) are not in the
+scale, nor is any `text-[Npx]`: the frames' odd sizes round to the nearest step here. 12px is a
+floor rather than a convention — this type is Lao, which loses its loops below it. A card title
+never drops to a body size to fit beside a control; shorten the title or move the control.
 
 **Breakpoints** are `mobile` 640, `tablet` 768, `laptop` 960 and `desktop` 1280. Tailwind's own `sm/md/lg` are deliberately removed.
 
@@ -117,7 +122,17 @@ Amounts always use `tabular-nums`.
 - The nav items are the design's: Home, Messages, Pending authorization, Manage permissions, Accounts, Manage members, Edit group, Log out.
 - The badges count unread messages and approvals waiting on you, live from the data.
 - The pink chevron collapses the column to an icon rail.
-- Below `laptop`, the column becomes a drawer opened from the top bar.
+- Below `laptop`, the column becomes a drawer opened from the top bar: it slides in from the left, and the scrim, Escape or a navigation closes it.
+
+**Spacing rhythm.** Three steps, and nothing between them:
+
+| Step | Value | Where |
+|---|---|---|
+| Card rhythm | **16px** | Between cards inside a page, and between the sidebar's two cards |
+| Page frame | **16px**, 24px top / 27px sides at desktop | `Layout.svelte`'s padding, and the top bar's |
+| Column gutter | **36px** | Sidebar to content: 20px of chevron overhang (`pr-5`) plus a 16px gap |
+
+Both columns scroll, and both start 8px in (`pt-2`) so the first card's 6px shadow is not clipped by the scroller's edge.
 
 **Full-width screens.** Create OneBank, Join and Leave are drawn without the left column, as in the design, and no group tab is active on them. Routes opt in with `fullWidth` in `src/lib/routes.ts`.
 
@@ -180,6 +195,8 @@ When the limit resets, compare the second and third groups frame by frame, and c
 Black survives only as translucent backdrops (`bg-black/40`) behind dialogs and drawers, and in the chart tooltip.
 
 **No gradients on controls or surfaces** (2026-09-22). Buttons, the bottom-nav pill and cards are flat brand colour; the old `.ob-gradient` utility is gone. Status chips use the palette: information (counts, view-only) in navy tint (`onebank-blue-soft` on `onebank-blue`), anything needing action or carrying a limit in pink/red (`onebank-pink` on `onebank-red`), "waiting for approval" in `onebank-pending`. Two exceptions: the chart's area fill, which fades under the line, and the login backdrop from its Figma frame.
+
+**A tighter shell** (2026-09-28). The frames put 40px above the top bar and 60px below it, and 56px between the columns, against 12px between the cards inside a page — at that ratio the shell read as empty space with content adrift in it. The shell now follows the rhythm table above, which moves the first card about 68px up the page at desktop. Nothing inside a card moved.
 
 ## Where the design is silent (decisions)
 

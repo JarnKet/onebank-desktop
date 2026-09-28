@@ -11,7 +11,7 @@
 </script>
 
 <div role="status"
-     class="mb-3 flex items-start gap-3 rounded-ob-sm border border-onebank-blue/20 bg-onebank-blue-soft px-4 py-3 text-sm text-onebank-blue">
+     class="mb-4 flex items-start gap-3 rounded-ob-sm border border-onebank-blue/20 bg-onebank-blue-soft px-4 py-3 text-sm text-onebank-blue">
     <Icon icon="mdi:cloud-off-outline" class="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true"/>
     <p>
         <span class="font-semibold">{t('Offline data', 'ຂໍ້ມູນອອບລາຍ', '离线数据', 'Dữ liệu ngoại tuyến')}</span>

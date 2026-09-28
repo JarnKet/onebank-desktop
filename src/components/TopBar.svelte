@@ -50,7 +50,7 @@
     ];
 </script>
 
-<header class="flex items-center gap-4 px-4 pb-4 pt-4 tablet:px-[27px] desktop:gap-6 desktop:pt-10 desktop:pb-[60px]">
+<header class="flex items-center gap-3 px-4 pb-4 pt-4 tablet:gap-4 tablet:px-[27px] desktop:gap-5 desktop:pt-6">
     <button type="button" class="rounded-ob-sm p-1 laptop:hidden" aria-label={t('Open menu', 'ເປີດເມນູ')} onclick={() => onMenu?.()}>
         <Icon icon="mdi:menu" class="h-7 w-7"/>
     </button>
@@ -62,7 +62,7 @@
     </button>
 
     <div class="flex min-w-0 flex-1 items-center gap-4 laptop:justify-center">
-    <nav class="flex min-w-0 items-center gap-4 overflow-x-auto px-1 py-2"
+    <nav class="flex min-w-0 items-center gap-3 overflow-x-auto px-1 py-1 tablet:gap-4"
          aria-label={t('Groups', 'ກຸ່ມ')}>
         {#if $groupsLoading && $groups.length === 0}
             {#each [0, 1, 2] as i (i)}
@@ -104,7 +104,7 @@
                 {#each manageItems as item (item.path)}
                     {@const here = $routeLocation.path === item.path}
                     <button type="button" role="menuitem"
-                            class="h-12.5 w-full rounded-ob-lg text-center text-xl transition-colors {here ? 'bg-onebank-red font-semibold text-white' : 'hover:bg-onebank-pink'}"
+                            class="h-12.5 w-full rounded-ob-lg text-center text-base transition-colors {here ? 'bg-onebank-red font-semibold text-white' : 'hover:bg-onebank-pink'}"
                             onclick={() => manage(item.path)}>
                         {t(item.en, item.lo)}
                     </button>
@@ -125,7 +125,7 @@
         >
             <img src={current.flag} alt="" class="h-10 w-10 rounded-full object-cover"/>
             <Icon icon="mdi:menu-down" class="h-5 w-5 text-black"/>
-            <span class="hidden min-w-10 text-center text-xl font-medium tablet:inline">{current.label}</span>
+            <span class="hidden min-w-10 text-center text-base font-medium tablet:inline">{current.label}</span>
         </button>
         {#if languageOpen}
             <ul class="absolute right-0 top-[66px] z-30 w-52 overflow-hidden rounded-ob-xl bg-white py-2 shadow-ob-card"

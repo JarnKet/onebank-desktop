@@ -68,7 +68,7 @@
     }
 </script>
 
-<div class="flex flex-col gap-5">
+<div class="flex flex-col gap-4">
     <!-- Group card -->
     <section class="ob-card relative p-5" class:px-2={!expand} aria-label={t('Current group', 'ກຸ່ມປັດຈຸບັນ')}>
         {#if isLoading && !home}
@@ -101,7 +101,7 @@
             </div>
             {#if expand}
                 <div class="mt-4 flex justify-end">
-                    <button type="button" class="h-[50px] w-[174px] rounded-ob-xl bg-onebank-red text-xl font-bold text-white transition-colors hover:bg-onebank-dark-red"
+                    <button type="button" class="h-[50px] w-[174px] rounded-ob-xl bg-onebank-red text-base font-bold text-white transition-colors hover:bg-onebank-dark-red"
                             onclick={openAddMemberDialog}>
                         {t('Add member', 'ເພີ່ມສະມາຊິກ')}
                     </button>

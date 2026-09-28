@@ -53,7 +53,7 @@
         <button type="button" aria-expanded={!collapsed} aria-label={t('Toggle', 'ສະແດງ/ເຊື່ອງ')} onclick={() => (collapsed = !collapsed)}>
             <Icon icon="mdi:chevron-down" class="h-5 w-5 transition-transform {collapsed ? '-rotate-90' : ''}"/>
         </button>
-        <h2 class="mr-auto text-sm font-bold">{t('Where it went', 'ລາຍຈ່າຍເດືອນນີ້')}</h2>
+        <h2 class="mr-auto text-xl font-bold">{t('Where it went', 'ລາຍຈ່າຍເດືອນນີ້')}</h2>
         <div class="w-44"><AccountPicker {accounts} bind:value={accountId} size="sm" label={t('Share account', 'ບັນຊີ')}/></div>
     </header>
     {#if !collapsed}
