@@ -1,7 +1,7 @@
 /**
  * Commands the Figma screens need that are NOT in the BCEL One core contract.
  *
- * Transfers, bills, top-up, salary, e-cheque, approvals and role editing have
+ * Transfers, bills, top-up, salary, e-cheque and approvals have
  * no known core command yet. The names below are the ones those
  * screens were written against. Each is sent to the core first; when the core
  * refuses it or does not answer, the local store answers instead and the shell
@@ -14,6 +14,7 @@
 import { get } from 'svelte/store'
 import { currentGroup } from '../../stores/onebankGroups'
 import { callWithFallback as call } from './local'
+import type { TwoFactorProof } from '../twoFactor'
 import type {
   AddRecipientResponse,
   ApiEnvelope,
@@ -62,9 +63,24 @@ export function changeMemberRole(userid: string, role: 'ADMIN' | 'MEMBER', oneba
   return call<ApiEnvelope>(GROUP, { command: 'changememberrole', userid, role, onebankid: groupId(onebankid) })
 }
 
-/** Creates a role, or replaces the one with the same `permissionid`. */
-export function savePermission(permission: Permission, onebankid?: string): Promise<SavePermissionResponse> {
-  return call<SavePermissionResponse>(GROUP, { command: 'savepermission', permission, onebankid: groupId(onebankid) })
+/**
+ * Creates a role. The core has this command — both of onebank-ui's ROLE flows
+ * send it, with the proof TWOFACTOR returned — so it keeps the fallback only
+ * until a verified call is confirmed against the core, and then moves to
+ * `commands.ts`. There is no command for changing a role: roles are created and
+ * removed, never edited.
+ */
+export function addPermission(
+  permission: Permission,
+  proof: TwoFactorProof,
+  onebankid?: string,
+): Promise<SavePermissionResponse> {
+  return call<SavePermissionResponse>(GROUP, {
+    command: 'addpermission',
+    permission,
+    ...proof,
+    onebankid: groupId(onebankid),
+  })
 }
 
 /** Saved and recent transfer recipients. */

@@ -9,7 +9,7 @@ import { get } from 'svelte/store'
 import { setTransport } from '../client'
 import { env } from '../../env'
 import { getPendingApprovals, getPermissions, removePermission, viewTransactions } from '../commands'
-import { approveTransaction, savePermission, submitTransfer } from '../unmapped'
+import { addPermission, approveTransaction, submitTransfer } from '../unmapped'
 import { callWithFallback, resetLocalData } from './index'
 import { currentGroup, onebankGroups } from '../../../stores/onebankGroups'
 import { loginData } from '../../../stores/session'
@@ -110,7 +110,7 @@ describe('local writes show on the core reads', () => {
   it('lists a role saved locally alongside the core roles', async () => {
     setTransport(refusingCore())
     await getPermissions()
-    const saved = await savePermission({ name: 'Local role', accountids: ['A1'], userids: ['U1'], viewonly: false })
+    const saved = await addPermission({ name: 'Local role', accountids: ['A1'], userids: ['U1'], viewonly: false }, {})
     expect(saved.result).toBe(0)
 
     const names = ((await getPermissions()).permissions ?? []).map((permission) => permission.name)
@@ -120,7 +120,7 @@ describe('local writes show on the core reads', () => {
   it('removes a local-only role without asking the core', async () => {
     const calls: string[] = []
     setTransport(refusingCore(calls))
-    const saved = await savePermission({ name: 'Local role', accountids: [], userids: [], viewonly: true })
+    const saved = await addPermission({ name: 'Local role', accountids: [], userids: [], viewonly: true }, {})
     const id = (saved as any).permission.permissionid as number
     expect(id).toBeLessThan(0)
 
@@ -155,7 +155,7 @@ describe('local writes show on the core reads', () => {
 
   it('forgets everything on reset (logout)', async () => {
     setTransport(refusingCore())
-    await savePermission({ name: 'Local role', accountids: [], userids: [], viewonly: true })
+    await addPermission({ name: 'Local role', accountids: [], userids: [], viewonly: true }, {})
     resetLocalData()
     expect(((await getPermissions()).permissions ?? []).map((permission) => permission.name)).toEqual(['Core role'])
     expect(get(usingLocalData)).toBe(false)

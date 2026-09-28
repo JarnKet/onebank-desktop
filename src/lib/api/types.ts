@@ -156,19 +156,21 @@ export interface RemoveMemberResponse extends ApiEnvelope {}
 
 /** Spending caps on a role, in the account's currency. Absent means no cap. */
 export interface TransactionLimit {
-  pertransaction?: number
-  daily?: number
+  /** Per transaction. The core answers a string on some builds. */
+  amount?: number | string
+  daily?: number | string
+  weekly?: number | string
+  monthly?: number | string
 }
 
 /**
  * One level of approval: who may approve, and how many of them must.
- * "ຕ້ອງອະນຸມັດທຸກຄົນ" is `ALL`; "ຕ້ອງອະນຸມັດຢ່າງຕ່ຳ N ຄົນ" is `ATLEAST` with `min`.
+ * "Everyone must approve" is `approvernumber` equal to the number of approvers.
  */
 export interface ApproverLevel {
-  level: number
-  userids: string[]
-  mode?: 'ALL' | 'ATLEAST'
-  min?: number
+  approverlevel: number
+  approvernumber: number
+  approveruserids: string[]
 }
 
 export interface Permission {

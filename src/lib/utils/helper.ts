@@ -8,6 +8,7 @@ import type {PopupMetadata} from "../../definition";
 import {currentGroup, onebankGroups} from "../../stores/onebankGroups";
 import {buildUrlParam, loadUrlParams} from './url';
 import {currentPath, goHome, navigateToPage} from './navigation';
+import {awaitPopupResult, nextResultCallbackId, settlePopupResult} from './popupResult';
 import {routeForPath} from '../routes';
 export {buildUrlParam, loadUrlParams};
 
@@ -254,6 +255,17 @@ export function showPopup(pagename: string, paramArray?: Record<string, any> | s
     managePopup({pagename, paramArray, from, callbackid, isAuthenticated: true});
 }
 
+/**
+ * Opens a page as an overlay and resolves what it closes with — the routed
+ * page's `showPopupForResult`. Never routed natively: a native route returns no
+ * result. Resolves null when the user backs out.
+ */
+export function showPopupForResult(pagename: string, paramArray?: Record<string, any> | string, from?: string): Promise<any> {
+    const callbackid = nextResultCallbackId();
+    managePopup({pagename, paramArray, from, callbackid, isAuthenticated: true});
+    return awaitPopupResult(callbackid);
+}
+
 export function showUnauthenticatedPopup(pagename: string, paramArray?: Record<string, any> | string, from?: string, callbackid?: string): void {
     managePopup({pagename, paramArray, from, callbackid, isAuthenticated: false});
 }
@@ -418,10 +430,14 @@ export function closePopup(result?: any, isAuthenticated: boolean = true): void 
 
     const currentActivePopup = get(activePopupStore);
 
+    // The routed page waits in this document, so it is answered directly —
+    // including when it is answered with nothing.
+    const answeredNatively = settlePopupResult(closingPopup.callbackid, result);
+
     // A result only has somewhere to go while another overlay is still stacked
     // below. With the stack empty the caller was the routed page, which is in
     // this document and does not need a postMessage.
-    if (result && closingPopup.callbackid && currentActivePopup) {
+    if (!answeredNatively && result && closingPopup.callbackid && currentActivePopup) {
         const frameElement = document.getElementById(`frame-${currentActivePopup.id}`) as HTMLIFrameElement | null;
         if (frameElement && frameElement.contentWindow) {
             frameElement.contentWindow.postMessage(

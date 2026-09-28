@@ -14,6 +14,7 @@ import type { SidebarMenuTitle } from '../../definition'
 import { activePopup, popups } from '../../stores/popup'
 import { routeLocation } from '../../stores/route'
 import { buildUrlParam } from './url'
+import { cancelPopupResults } from './popupResult'
 
 /** Serialises route params into a hash querystring, so links survive a refresh. */
 function toQueryString(params?: Record<string, unknown> | string): string {
@@ -30,6 +31,7 @@ function toQueryString(params?: Record<string, unknown> | string): string {
 export function closeOverlays(): void {
   if (get(popups).length) popups.set([])
   activePopup.set(null)
+  cancelPopupResults()
 }
 
 export function navigateToPath(path: string, params?: Record<string, unknown> | string): void {

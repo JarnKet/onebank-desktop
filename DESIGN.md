@@ -160,7 +160,7 @@ Both columns scroll, and both start 8px in (`pt-2`) so the first card's 6px shad
 | Add member | `components/addmemberdialog/AddMemberDialog.svelte` | `1325:6`, `897`, `2142`, … ★ | native (role step framed) |
 | Manage members | `Members.svelte` | `1325:2511`, `2761`, `3017`, `3345` | native |
 | Accounts | `Account.svelte` + `account/*` | `1325:5865`, `6053`, `6186`, `6319` ★ | native |
-| Manage permissions | `Role.svelte` + `lib/components/PermissionEditor.svelte` | `1325:6818`, `6454` | native (local fallback) |
+| Manage permissions | `Role.svelte` + `lib/components/PermissionEditor.svelte` | `1325:6818`, `6454` | native (create and delete only; local fallback) |
 | Messages | `Messages.svelte`, `MessageDetail.svelte` | `1325:5106`, `5214` | native |
 | Pending authorization | `Authorization.svelte`, `AuthorizationHistory.svelte` | `1325:7358`, `7548`, `7748`, `7767`, `7910` | native (local fallback) |
 | Statement | `Statement.svelte` | `1325:3640`, `3819` ★ | native (real `STATEMENT/statement`) |

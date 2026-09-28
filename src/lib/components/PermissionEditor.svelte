@@ -48,16 +48,36 @@
 
     function addLevel() {
         const levels = permission.approverlevels ?? [];
-        permission.approverlevels = [...levels, {level: levels.length + 1, userids: [], mode: 'ALL'}];
+        permission.approverlevels = [...levels, {approverlevel: levels.length + 1, approvernumber: 0, approveruserids: []}];
     }
 
     function removeLevel(index: number) {
         permission.approverlevels = (permission.approverlevels ?? [])
             .filter((_, position) => position !== index)
-            .map((level, position) => ({...level, level: position + 1}));
+            .map((level, position) => ({...level, approverlevel: position + 1}));
     }
 
-    function setLimit(key: 'pertransaction' | 'daily', value: string) {
+    /**
+     * The wire carries no "everyone" flag — onebank-ui strips its own before
+     * sending — so "everyone" is `approvernumber` equal to the approver count.
+     */
+    function everyone(level: ApproverLevel): boolean {
+        return (level.approvernumber ?? 0) >= approvers(level).length;
+    }
+
+    function approvers(level: ApproverLevel): string[] {
+        return level.approveruserids ?? [];
+    }
+
+    function toggleApprover(level: ApproverLevel, index: number, userid: string) {
+        const next = toggleIn(approvers(level), userid);
+        setLevel(index, {
+            approveruserids: next,
+            approvernumber: everyone(level) ? next.length : Math.min(level.approvernumber || 1, next.length),
+        });
+    }
+
+    function setLimit(key: 'amount' | 'daily', value: string) {
         const number = Number(value.replace(/[^\d.]/g, ''));
         permission.limit = {...permission.limit, [key]: Number.isFinite(number) && number > 0 ? number : undefined};
     }
@@ -94,8 +114,8 @@
         <legend class="mb-2 text-lg font-semibold">{t('Accounts it covers', 'ບັນຊີທີ່ໃຊ້ໄດ້')}</legend>
         <div class="grid gap-3 tablet:grid-cols-2 desktop:grid-cols-3">
             {#each accounts as account (account.accountid)}
-                <SelectableAccount {account} selected={permission.accountids.includes(account.accountid)}
-                                   onToggle={() => (permission.accountids = toggleIn(permission.accountids, account.accountid))}/>
+                <SelectableAccount {account} selected={(permission.accountids ?? []).includes(account.accountid)}
+                                   onToggle={() => (permission.accountids = toggleIn(permission.accountids ?? [], account.accountid))}/>
             {/each}
         </div>
     </fieldset>
@@ -126,7 +146,7 @@
             <legend class="mb-2 text-lg font-semibold">{t('Spending limits', 'ການຈຳກັດວົງເງິນ')}</legend>
             <div class="grid gap-3 tablet:grid-cols-2">
                 {#each [
-                    {key: 'pertransaction' as const, en: 'Per transaction', lo: 'ຈຳກັດວົງເງິນຕໍ່ທຸລະກຳ'},
+                    {key: 'amount' as const, en: 'Per transaction', lo: 'ຈຳກັດວົງເງິນຕໍ່ທຸລະກຳ'},
                     {key: 'daily' as const, en: 'Per day', lo: 'ຈຳກັດວົງເງິນຕໍ່ມື້'},
                 ] as limit (limit.key)}
                     <label class="block">
@@ -147,7 +167,7 @@
                 {#each permission.approverlevels ?? [] as level, index (index)}
                     <div class="rounded-ob-xl bg-white p-4 shadow-ob-card">
                         <div class="mb-3 flex items-center gap-3">
-                            <span class="font-semibold">{t(`Level ${level.level}`, `ອະນຸມັດຂັ້ນທີ ${level.level}`)}</span>
+                            <span class="font-semibold">{t(`Level ${index + 1}`, `ອະນຸມັດຂັ້ນທີ ${index + 1}`)}</span>
                             <button type="button" class="ml-auto text-onebank-subtle hover:text-onebank-red" aria-label={t('Remove level', 'ລຶບຂັ້ນ')}
                                     onclick={() => removeLevel(index)}>
                                 <Icon icon="mdi:close-circle-outline" class="h-5 w-5"/>
@@ -155,8 +175,8 @@
                         </div>
                         <div class="flex flex-wrap gap-2">
                             {#each members as member (member.userid)}
-                                {@const on = level.userids.includes(member.userid)}
-                                <button type="button" aria-pressed={on} onclick={() => setLevel(index, {userids: toggleIn(level.userids, member.userid)})}
+                                {@const on = approvers(level).includes(member.userid)}
+                                <button type="button" aria-pressed={on} onclick={() => toggleApprover(level, index, member.userid)}
                                         class="flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-xs transition-colors
                                                {on ? 'border-onebank-red bg-onebank-pink' : 'border-onebank-light-grey-4'}">
                                     <span class="flex h-6 w-6 items-center justify-center rounded-full bg-onebank-light-grey-4 text-[9px] font-semibold text-white">{initials(member.name)}</span>
@@ -164,23 +184,25 @@
                                 </button>
                             {/each}
                         </div>
-                        <div class="mt-3 flex flex-wrap items-center gap-4 text-sm">
-                            <label class="flex items-center gap-2">
-                                <input type="radio" name="mode-{index}" class="text-onebank-red focus:ring-onebank-red"
-                                       checked={level.mode !== 'ATLEAST'} onchange={() => setLevel(index, {mode: 'ALL'})}/>
-                                {t('Everyone must approve', 'ຕ້ອງອະນຸມັດທຸກຄົນ')}
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="radio" name="mode-{index}" class="text-onebank-red focus:ring-onebank-red"
-                                       checked={level.mode === 'ATLEAST'} onchange={() => setLevel(index, {mode: 'ATLEAST', min: level.min ?? 1})}/>
-                                {t('At least', 'ຕ້ອງອະນຸມັດຢ່າງຕ່ຳ')}
-                                <input type="number" min="1" max={Math.max(1, level.userids.length)} value={level.min ?? 1}
-                                       disabled={level.mode !== 'ATLEAST'}
-                                       oninput={(event) => setLevel(index, {min: Math.max(1, Number(event.currentTarget.value) || 1)})}
-                                       class="h-8 w-16 rounded-ob-sm border-onebank-light-grey-4 text-center text-sm disabled:opacity-40"/>
-                                {t('people', 'ຄົນ')}
-                            </label>
-                        </div>
+                        {#if approvers(level).length > 1}
+                            <div class="mt-3 flex flex-wrap items-center gap-4 text-sm">
+                                <label class="flex items-center gap-2">
+                                    <input type="radio" name="mode-{index}" class="text-onebank-red focus:ring-onebank-red"
+                                           checked={everyone(level)} onchange={() => setLevel(index, {approvernumber: approvers(level).length})}/>
+                                    {t('Everyone must approve', 'ຕ້ອງອະນຸມັດທຸກຄົນ')}
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="radio" name="mode-{index}" class="text-onebank-red focus:ring-onebank-red"
+                                           checked={!everyone(level)} onchange={() => setLevel(index, {approvernumber: approvers(level).length - 1})}/>
+                                    {t('At least', 'ຕ້ອງອະນຸມັດຢ່າງຕ່ຳ')}
+                                    <input type="number" min="1" max={approvers(level).length} value={level.approvernumber || 1}
+                                           disabled={everyone(level)}
+                                           oninput={(event) => setLevel(index, {approvernumber: Math.min(approvers(level).length, Math.max(1, Number(event.currentTarget.value) || 1))})}
+                                           class="h-8 w-16 rounded-ob-sm border-onebank-light-grey-4 text-center text-sm disabled:opacity-40"/>
+                                    {t('people', 'ຄົນ')}
+                                </label>
+                            </div>
+                        {/if}
                     </div>
                 {/each}
                 <button type="button" class="onebank-outline-btn h-11 tablet:w-auto" onclick={addLevel}>
@@ -196,8 +218,8 @@
             <legend class="mb-2 text-lg font-semibold">{t('Members with this role', 'ສະມາຊິກ')}</legend>
             <div class="flex flex-wrap gap-2">
                 {#each members as member (member.userid)}
-                    {@const on = permission.userids.includes(member.userid)}
-                    <button type="button" aria-pressed={on} onclick={() => (permission.userids = toggleIn(permission.userids, member.userid))}
+                    {@const on = (permission.userids ?? []).includes(member.userid)}
+                    <button type="button" aria-pressed={on} onclick={() => (permission.userids = toggleIn(permission.userids ?? [], member.userid))}
                             class="flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm transition-colors
                                    {on ? 'border-onebank-red bg-onebank-pink' : 'border-onebank-light-grey-4 bg-white'}">
                         <span class="flex h-7 w-7 items-center justify-center rounded-full bg-onebank-light-grey-4 text-[10px] font-semibold text-white">{initials(member.name)}</span>

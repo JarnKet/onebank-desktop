@@ -139,21 +139,18 @@ function findAccount(ctx: Context, accountid: unknown): Account {
  * maker's own roles, each counting all of its approvers or its stated minimum.
  */
 function approvalsRequired(permissions: Permission[], makerid: string): number {
-  const mine = permissions.filter((permission) => permission.userids.includes(makerid) && !permission.viewonly)
+  const mine = permissions.filter((permission) => (permission.userids ?? []).includes(makerid) && !permission.viewonly)
   return mine
     .flatMap((permission) => permission.approverlevels ?? [])
-    .reduce(
-      (sum, level) => sum + (level.mode === 'ATLEAST' ? Math.max(1, level.min ?? 1) : Math.max(1, level.userids?.length ?? 1)),
-      0,
-    )
+    .reduce((sum, level) => sum + Math.max(1, level.approvernumber || (level.approveruserids ?? []).length), 0)
 }
 
 /** The tightest per-transaction cap among the maker's roles, if any. */
 function perTransactionLimit(permissions: Permission[], makerid: string): number | undefined {
   const caps = permissions
-    .filter((permission) => permission.userids.includes(makerid))
-    .map((permission) => permission.limit?.pertransaction)
-    .filter((cap): cap is number => typeof cap === 'number' && cap > 0)
+    .filter((permission) => (permission.userids ?? []).includes(makerid))
+    .map((permission) => Number(permission.limit?.amount))
+    .filter((cap) => Number.isFinite(cap) && cap > 0)
   return caps.length ? Math.min(...caps) : undefined
 }
 
@@ -288,7 +285,7 @@ const handlers: Record<string, Handler> = {
     ctx.group.memberRoles[String(params.userid)] = String(params.role)
     return OK
   },
-  'ONEBANKGROUP/savepermission': (params) => {
+  'ONEBANKGROUP/addpermission': (params) => {
     const ctx = context(params)
     const incoming = params.permission as Permission
     const saved: Permission = incoming.permissionid ? incoming : { ...incoming, permissionid: -nextLocalId() }
