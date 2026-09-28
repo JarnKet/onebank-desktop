@@ -125,3 +125,41 @@ describe('a core that never answers', () => {
     expect(post.mock.calls[0][2].timeout).toBeGreaterThan(0)
   })
 })
+
+describe('requests to the core', () => {
+  it('go out one at a time, not in parallel', async () => {
+    let live = 0
+    let peak = 0
+    post.mockImplementation(async () => {
+      peak = Math.max(peak, ++live)
+      await Promise.resolve()
+      live--
+      return { data: { result: 0 } }
+    })
+    vi.resetModules()
+    const module = await import('./connector')
+    const connector = new module.default()
+    // A session in hand, so these are three posts, not one coalesced handshake.
+    module.default.adoptSession('SESSION-1', '00112233445566778899aabbccddeeff')
+
+    const answers = await Promise.all([
+      connector.sendMessage('ONEBANKHOME', { command: 'loadwidget', widget: 'USAGEDAILY' }),
+      connector.sendMessage('ONEBANKHOME', { command: 'loadwidget', widget: 'USAGESHARE' }),
+      connector.sendMessage('ONEBANKTRANSACTION', { command: 'viewtransactions' }),
+    ])
+
+    expect(answers).toHaveLength(3)
+    expect(post).toHaveBeenCalledTimes(3)
+    expect(peak).toBe(1)
+  })
+
+  it('keeps sending after one of them fails', async () => {
+    post.mockRejectedValueOnce(axiosError('ECONNREFUSED'))
+    post.mockResolvedValue({ data: { result: 1, message: 'nope' } })
+    const connector = await freshConnector()
+
+    await expect(connector.getSession()).rejects.toThrow(/Could not reach the server/)
+    await expect(connector.getSession()).rejects.toThrow('nope')
+    expect(post).toHaveBeenCalledTimes(2)
+  })
+})

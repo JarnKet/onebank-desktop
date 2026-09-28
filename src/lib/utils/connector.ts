@@ -17,6 +17,17 @@ export default class Connector {
     /** In flight while a handshake is running, null the rest of the time. */
     private static sessionPromise: Promise<void> | null = null;
 
+    // One request at a time: `service3.php` answers result 99 "Service is busy"
+    // when it cannot open its socket to the core, which is what a parallel
+    // burst gets.
+    private static chain: Promise<unknown> = Promise.resolve();
+
+    private static enqueue<T>(task: () => Promise<T>): Promise<T> {
+        const run = Connector.chain.then(task, task);
+        Connector.chain = run.catch(() => undefined);
+        return run;
+    }
+
     /**
      * Every call to the core goes through here.
      *
@@ -26,7 +37,11 @@ export default class Connector {
      * pending indefinitely. A timed-out or refused request is rethrown with a
      * message worth showing a user; axios's own is `timeout of 20000ms exceeded`.
      */
-    private static async post(body: Record<string, unknown>): Promise<{data: any}> {
+    private static post(body: Record<string, unknown>): Promise<{data: any}> {
+        return Connector.enqueue(() => Connector.send(body));
+    }
+
+    private static async send(body: Record<string, unknown>): Promise<{data: any}> {
         try {
             // Resolved per request, so the login form's Core IP takes effect
             // without a rebuild (dev overrides only; see src/lib/overrides.ts).
@@ -242,10 +257,18 @@ export default class Connector {
         Connector.sessionPassword = CryptoJS.enc.Hex.parse(this.xorHex(sessionck.toString(CryptoJS.enc.Hex), CryptoJS.enc.Base64.parse(rdata.sessionsk).toString(CryptoJS.enc.Hex)));
     }
 
+    /** Dev only: payloads carry account numbers, balances and history. */
+    private static log(label: string, ...parts: unknown[]): void {
+        if (!import.meta.env.DEV) return;
+        console.log(label, ...parts);
+    }
+
     public async sendMessage(service: string, dts: unknown): Promise<any> {
         if (!Connector.sessionKey) {
             await this.getSession();
         }
+
+        Connector.log('SENDING MESSAGE', service, dts);
 
         let iv = CryptoJS.lib.WordArray.random(16);
         let edts = CryptoJS.AES.encrypt(JSON.stringify(dts), Connector.requireSessionPassword(), {iv: iv});
@@ -288,6 +311,8 @@ export default class Connector {
 
             data = JSON.parse(dtext);
         }
+
+        Connector.log('RECEIVED RESPONSE', data);
 
         return data;
     }

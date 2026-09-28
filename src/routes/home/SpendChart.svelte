@@ -34,8 +34,8 @@
         failed = false;
         try {
             const response = await loadWidget('USAGEDAILY', id, group);
-            if (response.result === 0) items = (response.items as UsageDaily[]) ?? [];
-            else failed = true;
+            if (response.result !== undefined && response.result !== 0) failed = true;
+            else items = (response.items as UsageDaily[]) ?? [];
         } catch {
             failed = true;
         } finally {

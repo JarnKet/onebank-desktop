@@ -175,6 +175,12 @@ never from svelte-spa-router's internals.
 `loadHomeResult`), `home.ts` (`loadGroupHome` on every group change, `reloadHome()` after a
 mutation), `badges.ts` (pending approvals; the contract has no unread state).
 
+**Comments are few and short.** Let the code speak for itself: comment only what it cannot say
+itself — a server quirk, a wire-format surprise, a non-obvious ordering constraint — in one line.
+Do not comment every change, do not narrate what the code used to do or which bug a line fixes, and
+do not put a docblock on a self-evident function. The long comments already in the tree are not a
+licence to add more.
+
 **Commit messages carry no co-author or tool attribution trailers.** Subject in the imperative,
 lowercase; add a body only when the *why* isn't obvious from the diff.
 
