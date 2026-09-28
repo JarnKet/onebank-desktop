@@ -14,7 +14,7 @@
     import {routeLocation} from '../stores/route';
     import type {SidebarMenuTitle} from '../definition';
     import {sidebarMenuItems} from '../lib/constant';
-    import {initials, t} from '../lib/utils/helper';
+    import {t} from '../lib/utils/helper';
     import {logout} from '../lib/session';
     import {openAddMemberDialog} from '../stores/ui';
     import {pendingCount, unreadCount} from '../stores/badges';
@@ -86,10 +86,8 @@
                 {#if groupLogo}
                     <img src={groupLogo} alt="" class="h-[70px] w-[70px] shrink-0 rounded-full object-cover"/>
                 {:else}
-                    <span class="flex h-[70px] w-[70px] shrink-0 items-center justify-center rounded-full bg-[#d9d9d9] text-xl font-semibold text-white"
-                          class:h-12={!expand} class:w-12={!expand}>
-                        {initials(groupName)}
-                    </span>
+                    <img src="/img/ic_onebank.svg" alt="" class="h-[70px] w-[70px] shrink-0 rounded-full object-cover"
+                         class:h-12={!expand} class:w-12={!expand}/>
                 {/if}
                 {#if expand}
                     <div class="min-w-0 flex-1">
