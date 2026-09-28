@@ -4,7 +4,8 @@
  * The core has no from-date, so the range is reached by paging. What must hold:
  * the walk stops, it never loops, and it never invents or drops a row.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { setTransport } from './api/client'
 import type { StatementTransaction } from './api/types'
 import type { Account } from '../definition'
@@ -259,11 +260,33 @@ describe('the export', () => {
     expect(await exportStatement(account, '2025-07-01', '2025-07-15', 'pdf')).toEqual({ ok: false, message: 'Not permitted' })
   })
 
-  it('says so rather than save something else when the core sends rows, not a file', async () => {
-    setTransport(async () => ({ result: 0, json: [{ txtime: '2025-07-01', amount: -1 }] }))
-    const result = await exportStatement(account, '2025-07-01', '2025-07-15', 'pdf')
-    expect(result.ok).toBe(false)
-    expect(result.message).toBe('This account has no downloadable statement yet')
+  it('draws the file itself when the core sends rows instead of one', async () => {
+    setTransport(async () => ({ result: 0, json: [{ txtime: '2025-07-01 09:00:00', amount: -1, fee: 0 }] }))
+    // The renderer fetches the font and the logo, which jsdom will not do for a relative URL.
+    vi.stubGlobal('fetch', async (url: string) => {
+      const file = String(url) === 'phetsarath_ot.ttf' ? 'public/phetsarath_ot.ttf' : 'public/img/logobcel.png'
+      const bytes = readFileSync(file)
+      return { ok: true, status: 200, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) }
+    })
+    expect(await exportStatement(account, '2025-07-01', '2025-07-15', 'pdf')).toEqual({ ok: true })
+    vi.unstubAllGlobals()
+  })
+
+  it('words the failure rather than throwing when the file cannot be drawn', async () => {
+    setTransport(async () => ({ result: 0, json: [{ txtime: '2025-07-01 09:00:00', amount: -1, fee: 0 }] }))
+    // The xlsx template is fetched per export, unlike the font, which is kept once read.
+    vi.stubGlobal('fetch', async () => ({ ok: false, status: 404 }))
+    const result = await exportStatement(account, '2025-07-01', '2025-07-15', 'xlsx')
+    vi.unstubAllGlobals()
+    expect(result).toEqual({ ok: false, message: 'The statement file could not be built' })
+  })
+
+  it('says the bank sent nothing when there is neither a file nor rows', async () => {
+    setTransport(async () => ({ result: 0 }))
+    expect(await exportStatement(account, '2025-07-01', '2025-07-15', 'pdf')).toEqual({
+      ok: false,
+      message: 'The bank sent no file',
+    })
   })
 
   it('needs an account', async () => {

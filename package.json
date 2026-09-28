@@ -22,7 +22,10 @@
     "axios": "^1.20.0",
     "browser-image-compression": "^2.0.2",
     "crypto-js": "^4.2.0",
+    "exceljs": "^4.4.0",
     "jsbn": "^1.1.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "svelte-qrcode": "^1.0.1",
     "svelte-spa-router": "^5.1.1"
   },

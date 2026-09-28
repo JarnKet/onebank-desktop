@@ -236,10 +236,10 @@ export interface ExportResult {
 /**
  * Asks the core for the file and hands it to the browser.
  *
- * Nothing is drawn here: the core renders both formats. An account it does not
- * render answers with rows (`json`) instead, and onebank-ui builds the file from
- * them on the device with jsPDF and an xlsx template — not ported, so say so
- * rather than save something else.
+ * The core renders both formats for an ordinary account. A shadow account has
+ * none, so it answers with rows (`json`) and the file is drawn here instead
+ * (`./statementFile.ts`), which is what onebank-ui does; that path loads jsPDF
+ * or ExcelJS on demand, so an ordinary export never pays for them.
  */
 export async function exportStatement(
   account: Account | undefined,
@@ -250,13 +250,23 @@ export async function exportStatement(
   if (!account) return { ok: false, message: t('Choose an account first', 'ກະລຸນາເລືອກບັນຊີກ່ອນ') }
   const response = await downloadStatement(account.accountid, compactDay(from), compactDay(to), filetype)
   if (!isOk(response)) return { ok: false, message: response?.message }
-  if (!response.data) {
-    return response.json
-      ? { ok: false, message: t('This account has no downloadable statement yet', 'ບັນຊີນີ້ຍັງບໍ່ສາມາດດາວໂຫລດລາຍການໄດ້') }
-      : { ok: false, message: t('The bank sent no file', 'ທະນາຄານບໍ່ໄດ້ສົ່ງໄຟລ໌ມາ') }
+  const filename = exportFileName(account, from, to, filetype)
+
+  if (response.data) {
+    saveFile(base64ToBlob(response.data, filetype), filename)
+    return { ok: true }
   }
-  saveFile(base64ToBlob(response.data, filetype), exportFileName(account, from, to, filetype))
-  return { ok: true }
+  if (!response.json) return { ok: false, message: t('The bank sent no file', 'ທະນາຄານບໍ່ໄດ້ສົ່ງໄຟລ໌ມາ') }
+
+  try {
+    const { displayDay, renderStatementFile } = await import('./statementFile')
+    const meta = { account, fromdate: displayDay(new Date(`${from}T00:00:00`)), todate: displayDay(new Date(`${to}T00:00:00`)) }
+    saveFile(await renderStatementFile(response.json, filetype, meta), filename)
+    return { ok: true }
+  } catch (error) {
+    console.error('Statement file could not be drawn', error)
+    return { ok: false, message: t('The statement file could not be built', 'ບໍ່ສາມາດສ້າງໄຟລ໌ລາຍການໄດ້') }
+  }
 }
 
 function saveFile(blob: Blob, filename: string): void {
