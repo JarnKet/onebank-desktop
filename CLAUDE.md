@@ -211,7 +211,7 @@ active group tab `aria-current="true"`, a framed route `.route-frame`.
 
 | Gate | State |
 |---|---|
-| `pnpm test` | **445 passing** — a passing gate |
+| `pnpm test` | **446 passing** — a passing gate |
 | `pnpm run check` | **0 errors, 0 warnings** — a passing gate; do not add either |
 | `pnpm build` | passing gate |
 | `pnpm format:check` | failing, pre-existing — not a gate until someone runs `pnpm format` in a commit of its own |

@@ -303,6 +303,52 @@ describe('creating a role', () => {
     expect(permission.userids).toHaveLength(2)
   })
 
+  it('sifts the functions it offers, and keeps the ones the search hides', async () => {
+    await fillFirstStep()
+    labelled('Next').click()
+    await tick()
+    host.querySelectorAll<HTMLInputElement>('input[name="permissionType"]')[1].click()
+    await tick()
+    labelled('Next').click()
+    await tick()
+
+    // Off "every function" seeds the first few, ONEPAY among them.
+    ;(host.querySelector('input[type="checkbox"]') as HTMLInputElement).click()
+    await tick()
+    const offered = host.querySelectorAll('button[aria-pressed]').length
+
+    const search = host.querySelector('input[type="search"]') as HTMLInputElement
+    search.value = 'statement'
+    search.dispatchEvent(new Event('input'))
+    await tick()
+
+    expect(host.querySelectorAll('button[aria-pressed]').length).toBeLessThan(offered)
+    expect(host.textContent).not.toContain('OnePay')
+    expect(host.textContent).toContain('chosen')
+
+    search.value = 'nothing here'
+    search.dispatchEvent(new Event('input'))
+    await tick()
+    expect(host.textContent).toContain('Nothing matches')
+
+    // Hidden is not dropped: the held function still goes on the wire.
+    search.value = ''
+    search.dispatchEvent(new Event('input'))
+    await tick()
+    labelled('Next').click()
+    await tick()
+    labelled('Next').click()
+    await tick()
+    labelled('Continue', dialog()).click()
+    await flush()
+    labelled('Save').click()
+    await flush()
+    closePopup({ isVerified: true, type: 'question', ticket: 'TCK-5' })
+    await flush()
+
+    expect(callsTo('addpermission')[0].permission.allowedfunctions).toContain('ONEPAY')
+  })
+
   it('reviews what it will send before asking for verification', async () => {
     await fillFirstStep()
     labelled('Next').click()
