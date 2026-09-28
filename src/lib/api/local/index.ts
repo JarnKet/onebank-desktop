@@ -69,12 +69,12 @@ export async function callWithFallback<T extends ApiEnvelope>(service: string, d
   return handleLocally(service, data) as T
 }
 
-/** Local answers built on the core's transactions — the statement, a decision. */
-const NEEDS_TRANSACTIONS = new Set(['getstatement', 'approvetransaction', 'rejecttransaction', 'canceltransaction', 'archivetransaction'])
+/** Local answers built on the core's transactions — a decision on one. */
+const NEEDS_TRANSACTIONS = new Set(['approvetransaction', 'rejecttransaction', 'canceltransaction', 'archivetransaction'])
 
 /**
- * A statement opened straight after a reload has not seen the core's
- * transactions yet (they are kept in memory only), so read them once first.
+ * A decision taken straight after a reload has not seen the core's transactions
+ * yet (they are kept in memory only), so read them once first.
  */
 async function ensureTransactionsSeen(data: Record<string, unknown>): Promise<void> {
   const onebankid = String(data.onebankid ?? '')

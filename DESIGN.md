@@ -145,7 +145,7 @@ Both columns scroll, and both start 8px in (`pt-2`) so the first card's 6px shad
 | **Selectable account** | Add account, create OneBank, add member, roles | Avatar, number, holder, balance, currency and type chips, a checkbox top right; selected shows a 2px red outline (`lib/components/SelectableAccount.svelte`). |
 | **Status in words** | Everywhere | A transaction's status is always written out (ສຳເລັດ / ລໍຖ້າອະນຸມັດ / ຍົກເລີກ …). Colour follows it, never replaces it. Cancelled rows are struck through. |
 | **Approval trail** | Authorization, history | ✓ green "Level N approved by X", or ✗ red "Rejected by X" with the reason and timestamp. The user is marked "(You)". |
-| **List toolbar** | Messages, history, statement | A rounded search box, a date box and a navy "Filter" button (`lib/components/ListToolbar.svelte`). |
+| **List toolbar** | Messages, history | A rounded search box, a date box and a navy "Filter" button (`lib/components/ListToolbar.svelte`). |
 | **Dialog** | Confirmations, reject reason, filters, add member | A white 20px card with a centred bold title and centred buttons. Escape and the backdrop close it; focus moves in and back out (`lib/components/Modal.svelte`). |
 | **Paired buttons** | The Create OneBank wizard | A white "Back" in navy and a red "Next", joined inside one grey pill. |
 
@@ -163,7 +163,7 @@ Both columns scroll, and both start 8px in (`pt-2`) so the first card's 6px shad
 | Manage permissions | `Role.svelte` + `lib/components/PermissionEditor.svelte` | `1325:6818`, `6454` | native (local fallback) |
 | Messages | `Messages.svelte`, `MessageDetail.svelte` | `1325:5106`, `5214` | native |
 | Pending authorization | `Authorization.svelte`, `AuthorizationHistory.svelte` | `1325:7358`, `7548`, `7748`, `7767`, `7910` | native (local fallback) |
-| Statement | `Statement.svelte` | `1325:3640`, `3819` ★ | native (local fallback) |
+| Statement | `Statement.svelte` | `1325:3640`, `3819` ★ | native (real `STATEMENT/statement`) |
 | Transfer (+ international, ID card) | `money/TransferForm.svelte` | `1421:922`, `1213`, `732` ★ · `1421:5` · `1421:281` | native (local fallback) |
 | Salary & file transfer | `Salary.svelte` | `1421:555`, `1325:19128` ★ | native (local fallback) |
 | E-Cheque | `ECheque.svelte` | `1325:9762`, `9215`, `9455`, `9610`, `9940` | native (local fallback) |

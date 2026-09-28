@@ -276,17 +276,43 @@ export interface GetApprovalDetailResponse extends ApiEnvelope {
   approvers?: Approver[]
 }
 
+/**
+ * One line of an account statement.
+ *
+ * `STATEMENT/statement` has a shape of its own: `time` is `DD/MM/YYYY HH:MM:SS`
+ * where the rest of the contract sends ISO, and the detail is label/value pairs
+ * the core has already worded — `summary`/`detail` in Lao, `summarykey`/
+ * `detailkey` in English — rather than the fields of `TransactionInfo`.
+ */
+export interface StatementTransaction {
+  time: string
+  /** BCEL's own three-letter movement code: TRO, TRI, ONP, FEE, ATM…  */
+  type: string
+  title: string
+  subtitle?: string
+  summary: Record<string, string | undefined>
+  detail: Record<string, string | undefined>
+  summarykey: Record<string, string | undefined>
+  detailkey: Record<string, string | undefined>
+  /** The account's balance after this movement. */
+  balance: number
+  /** Signed: negative left the account. */
+  amount: number
+  diff: number
+  user: string
+}
+
+/** One page of a statement, newest first, plus the account's balance now. */
+export interface StatementResponse extends ApiEnvelope {
+  statements?: StatementTransaction[]
+  balance?: number
+  ccy?: string
+}
+
 // ------------------------------- for the unmapped screens (see ./unmapped.ts)
 
 export interface ApproveTransactionResponse extends ApiEnvelope {
   item?: TransactionInfo
-}
-
-/** A statement is settled history for one account, plus its balance now. */
-export interface GetStatementResponse extends ApiEnvelope {
-  items?: TransactionInfo[]
-  balance?: number
-  ccy?: string
 }
 
 /** Who a transfer goes to. */

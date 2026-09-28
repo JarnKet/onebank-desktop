@@ -44,6 +44,23 @@ describe('service routing', () => {
     expect(last().data.command).toBe('getuploadurlr2')
   })
 
+  it('sends the statement to STATEMENT', async () => {
+    await api.statement('A1')
+    expect(last().service).toBe('STATEMENT')
+    expect(last().data).toEqual({
+      command: 'statement',
+      transactiontype: 'account',
+      accountid: 'A1',
+      beforetime: null,
+      onebankid: 'GROUP-1',
+    })
+  })
+
+  it('pages the statement backwards with beforetime', async () => {
+    await api.statement('A1', '14/07/2025 09:51:31')
+    expect(last().data.beforetime).toBe('14/07/2025 09:51:31')
+  })
+
   it('sends opening an account to ONEBANK', async () => {
     await api.openNewAccount({ accountType: 'SHADOW', accountid: 'A1', alias: 'petty' })
     expect(last().service).toBe('ONEBANK')
@@ -212,7 +229,7 @@ describe('loadWidget', () => {
 })
 
 describe('every command reaches the wire exactly once', () => {
-  it('covers all 17 commands of the contract', async () => {
+  it('covers all 18 commands of the contract', async () => {
     await api.loadHome()
     await api.saveHomeMenus([])
     await api.loadWidget('ACCOUNTBALANCES')
@@ -230,10 +247,11 @@ describe('every command reaches the wire exactly once', () => {
     await api.viewTransactions()
     await api.getPendingApprovals()
     await api.getApprovalDetail('x')
+    await api.statement('A1')
 
     const commands = sent.map((s) => s.data.command)
-    expect(commands).toHaveLength(17)
-    expect(new Set(commands).size).toBe(17)
+    expect(commands).toHaveLength(18)
+    expect(new Set(commands).size).toBe(18)
   })
 })
 

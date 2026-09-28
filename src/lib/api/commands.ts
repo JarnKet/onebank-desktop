@@ -1,9 +1,8 @@
 /**
  * The OneBank service surface: one typed function per command.
  *
- * Five services, twenty-two commands — that is the whole backend contract for
- * the corporate OneBank pages. Nothing else should call `Connector.sendMessage`
- * directly.
+ * Six services — that is the whole backend contract for the corporate OneBank
+ * pages. Nothing else should call `Connector.sendMessage` directly.
  *
  * `onebankid` identifies the active group. It defaults to the `currentGroup`
  * store so callers rarely pass it, but stays overridable for flows that act on
@@ -48,6 +47,7 @@ import type {
   RemoveMemberResponse,
   RemovePermissionResponse,
   SaveHomeMenusResponse,
+  StatementResponse,
   ViewTransactionsResponse,
   WidgetKind,
 } from './types'
@@ -55,6 +55,7 @@ import type {
 const HOME = 'ONEBANKHOME'
 const GROUP = 'ONEBANKGROUP'
 const TRANSACTION = 'ONEBANKTRANSACTION'
+const STATEMENT = 'STATEMENT'
 const USER = 'USER'
 const ONEBANK = 'ONEBANK'
 
@@ -210,6 +211,26 @@ export function getApprovalDetail(transactionid: string, onebankid?: string): Pr
   return call<GetApprovalDetailResponse>(TRANSACTION, {
     command: 'getapprovaldetail',
     transactionid,
+    onebankid: groupId(onebankid),
+  })
+}
+
+// ------------------------------------------------------------------- STATEMENT
+
+/**
+ * One page of an account's settled movements, newest first.
+ *
+ * The core pages backwards only: `beforetime` is a row's own
+ * `DD/MM/YYYY HH:MM:SS`, and there is no from-date, so a date range is walked
+ * rather than asked for (`src/lib/statement.ts`). onebank-ui's `sendMessage`
+ * fills the `onebankid` in from the page's querystring; here it is explicit.
+ */
+export function statement(accountid: string, beforetime?: string | null, onebankid?: string): Promise<StatementResponse> {
+  return call<StatementResponse>(STATEMENT, {
+    command: 'statement',
+    transactiontype: 'account',
+    accountid,
+    beforetime: beforetime ?? null,
     onebankid: groupId(onebankid),
   })
 }

@@ -357,26 +357,6 @@ const handlers: Record<string, Handler> = {
     return { ...OK, item: record(ctx, found) }
   },
 
-  // ---- statement
-  'ONEBANKTRANSACTION/getstatement': (params) => {
-    const ctx = context(params)
-    const account = findAccount(ctx, params.accountid)
-    const from = String(params.from ?? '')
-    const to = String(params.to ?? '')
-    const real = [...(seenTransactions.get(ctx.onebankid)?.values() ?? [])].map((tx) => ({
-      ...tx,
-      ...ctx.group.patches[String(tx.transactionid)],
-    }))
-    const items = [...ctx.group.transactions, ...real]
-      .filter((tx) => {
-        if (tx.account !== account.account || tx.status !== 'SUCCESS') return false
-        const day = String(tx.txtime).slice(0, 10)
-        return (!from || day >= from) && (!to || day <= to)
-      })
-      .sort((a, b) => String(b.txtime).localeCompare(String(a.txtime)))
-    return { ...OK, items, balance: account.availablebalance ?? 0, ccy: account.ccy }
-  },
-
   // ---- transfers
   'ONEBANKTRANSACTION/submittransfer': (params) => {
     const request = params as unknown as TransferRequest & Params

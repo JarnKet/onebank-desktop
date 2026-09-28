@@ -1,8 +1,8 @@
 /**
  * Commands the Figma screens need that are NOT in the BCEL One core contract.
  *
- * Transfers, statement, bills, top-up, salary, e-cheque, approvals and role
- * editing have no known core command yet. The names below are the ones those
+ * Transfers, bills, top-up, salary, e-cheque, approvals and role editing have
+ * no known core command yet. The names below are the ones those
  * screens were written against. Each is sent to the core first; when the core
  * refuses it or does not answer, the local store answers instead and the shell
  * says so (`./local`). Nothing answered locally reaches the bank.
@@ -29,7 +29,6 @@ import type {
   GetMessagesResponse,
   GetProductTransactionsResponse,
   GetRecipientsResponse,
-  GetStatementResponse,
   LoadExchangeRatesResponse,
   LoadInterestRatesResponse,
   LoadLoansResponse,
@@ -124,17 +123,6 @@ export function cancelTransaction(transactionid: string | number, onebankid?: st
 /** Files a rejected transaction away, so it leaves the "awaiting" column. */
 export function archiveTransaction(transactionid: string | number, onebankid?: string): Promise<ApproveTransactionResponse> {
   return call<ApproveTransactionResponse>(TRANSACTION, { command: 'archivetransaction', transactionid, onebankid: groupId(onebankid) })
-}
-
-/** Settled history for one account, between two `YYYY-MM-DD` days inclusive. */
-export function getStatement(accountid: string, from?: string, to?: string, onebankid?: string): Promise<GetStatementResponse> {
-  return call<GetStatementResponse>(TRANSACTION, {
-    command: 'getstatement',
-    accountid,
-    from: from ?? '',
-    to: to ?? '',
-    onebankid: groupId(onebankid),
-  })
 }
 
 /**

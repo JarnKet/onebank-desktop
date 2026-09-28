@@ -1,7 +1,8 @@
 /**
- * Words and groupings for transactions, shared by the statement, the
- * authorization page and the inbox so the three never disagree on what a
- * "TRANSFER" is called or which filter chip catches it.
+ * Words for transactions, shared by the authorization page, the inbox and the
+ * iBank slips so they never disagree on what a "TRANSFER" is called.
+ *
+ * The statement speaks its own wire format and has `lib/statement.ts` instead.
  */
 
 import type { TransactionInfo } from './api/types'
@@ -51,40 +52,6 @@ export function statusTone(status: string | undefined): string {
       return 'bg-onebank-row text-onebank-subtle'
   }
 }
-
-/** The statement's filter chips, as the design groups them. */
-export interface Category {
-  id: string
-  en: string
-  lo: string
-  matches: (tx: TransactionInfo) => boolean
-}
-
-export const CATEGORY_GROUPS: Array<{ en: string; lo: string; categories: Category[] }> = [
-  {
-    en: 'Transfers',
-    lo: 'ການໂອນເງິນ',
-    categories: [
-      { id: 'IN', en: 'Money in', lo: 'ເງິນເຂົ້າ', matches: (tx) => Number(tx.amount) > 0 },
-      { id: 'OUT', en: 'Money out', lo: 'ເງິນອອກ', matches: (tx) => Number(tx.amount) < 0 },
-      { id: 'ONEPAY', en: 'OnePay', lo: 'ຊຳລະ OnePay', matches: (tx) => tx.service === 'PAYMENT' },
-      { id: 'BCEL', en: 'Within BCEL', lo: 'ການໂອນເງິນພາຍໃນບັນຊີ ທຄຕລ', matches: (tx) => tx.service === 'TRANSFER' },
-      { id: 'SALARY', en: 'Salary', lo: 'ໂອນເງິນເດືອນ', matches: (tx) => tx.service === 'SALARY' },
-      { id: 'INTERBANK', en: 'Interbank', lo: 'ການໂອນເງິນຂ້າມທະນາຄານ', matches: (tx) => tx.service === 'INTERBANK' },
-    ],
-  },
-  {
-    en: 'Bill payments',
-    lo: 'ຈ່າຍຄ່າໃບບິນ',
-    categories: [
-      { id: 'ELECTRICITY', en: 'Electricity', lo: 'ໄຟຟ້າ', matches: (tx) => tx.service === 'ELECTRICITY' },
-      { id: 'WATER', en: 'Water', lo: 'ນ້ຳປະປາ', matches: (tx) => tx.service === 'WATER' },
-      { id: 'TOPUP', en: 'Phone top-up', lo: 'ຕື່ມມູນຄ່າໂທ', matches: (tx) => tx.service === 'TOPUP' },
-    ],
-  },
-]
-
-export const ALL_CATEGORIES = CATEGORY_GROUPS.flatMap((group) => group.categories)
 
 /** Who the money went to (or came from), as the cards phrase it. */
 export function counterpart(tx: TransactionInfo): string {

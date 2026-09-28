@@ -63,8 +63,8 @@ OneBank-branded tiles and the `PAGE_RENAMES` reach the same screens. `routes.tes
 
 ## Commands the core contract lacks — `src/lib/api/local`
 
-Authorization, Role, Statement, Transfer, Salary, E-Cheque, bills, Top-up and the iBank screens call commands that
-are not in the 22-command contract. They live in `src/lib/api/unmapped.ts` and all go through
+Authorization, Role, Transfer, Salary, E-Cheque, bills, Top-up and the iBank screens call commands
+the core contract does not have. They live in `src/lib/api/unmapped.ts` and all go through
 `callWithFallback`:
 
 - **The core first.** A `result: 0` answer is used as is — the day the core implements a command,
@@ -106,9 +106,20 @@ repos' allowlists and unverified.
 ## The core
 
 **Backend calls go through `src/lib/api/commands.ts`,** not `Connector.sendMessage` directly — the
-22-command contract across five services, the single place the wire format is expressed and the
+contract across six services, the single place the wire format is expressed and the
 thing that keeps web and mobile aligned. `client.ts` sends each through `Connector` unless a test
 calls `setTransport`. (Login and QR login still call the Connector directly, as before.)
+
+**The statement is real** and speaks its own wire format. `STATEMENT/statement` pages *backwards*
+only — `beforetime` is a row's own `DD/MM/YYYY HH:MM:SS` — and takes no from-date, so
+`src/lib/statement.ts` walks the range page by page (capped at `MAX_PAGES`, the rest behind a "load
+older" button) and parses `time` there; `utils/helper.ts`'s `splitTime` speaks the ISO `txtime` of
+every other command. Its rows are `StatementTransaction`, not `TransactionInfo`: a `type` code, a
+`title`/`subtitle` and label/value pairs the core has already worded (`summary` Lao,
+`summarykey` English). The search box and the filter modal sift the rows already read — the core
+filters nothing, so the modal's chips are built from those rows (direction, plus whichever movement
+codes they carry) and a chip is namespaced by its group's id prefix: chips widen within a group and
+narrow across groups. `src/lib/statement.test.ts` pins the walk and the sifting.
 
 **Every call to the core carries a timeout.** `Connector.post()` is the single place that talks to
 `service3.php`; tune with `VITE_REQUEST_TIMEOUT_MS` (default 20000). Transport failures are
@@ -191,7 +202,7 @@ active group tab `aria-current="true"`, a framed route `.route-frame`.
 
 | Gate | State |
 |---|---|
-| `pnpm test` | **382 passing** — a passing gate |
+| `pnpm test` | **404 passing** — a passing gate |
 | `pnpm run check` | **0 errors, 0 warnings** — a passing gate; do not add either |
 | `pnpm build` | passing gate |
 | `pnpm format:check` | failing, pre-existing — not a gate until someone runs `pnpm format` in a commit of its own |

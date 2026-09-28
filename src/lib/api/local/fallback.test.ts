@@ -162,20 +162,10 @@ describe('local writes show on the core reads', () => {
   })
 })
 
-describe('a local statement', () => {
-  it('reads the core transactions first when opened straight after a reload', async () => {
-    const calls: string[] = []
-    const core = refusingCore(calls)
-    setTransport(async (service, data) => {
-      if (data.command === 'viewtransactions') {
-        return { result: 0, items: [{ ...PENDING, transactionid: 8, status: 'SUCCESS' }] }
-      }
-      return core(service, data)
-    })
-    const { getStatement } = await import('../unmapped')
-    const response = await getStatement('A1')
-    expect(calls).not.toContain('ONEBANKTRANSACTION/viewtransactions')
-    expect(response.result).toBe(0)
-    expect((response.items ?? []).map((tx) => tx.transactionid)).toEqual([8])
+describe('a local decision', () => {
+  it('reads the core transactions first when taken straight after a reload', async () => {
+    setTransport(refusingCore())
+    expect((await approveTransaction(77)).result).toBe(0)
+    expect(((await getPendingApprovals()).items ?? [])).toHaveLength(0)
   })
 })

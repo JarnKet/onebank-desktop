@@ -2,7 +2,7 @@
 
 OneBank is BCEL's shared-account banking: a **group** holds accounts that several people can see or use. Each person gets a **role** that decides what they may do and who must approve it. OneBank Web is the desktop front end for it.
 
-It talks to the BCEL One core. Every Figma screen is **native**. Where a screen needs a command the core contract does not have yet (approvals, roles, statement, transfers, bills, top-up, salary, e-cheque), the command is sent to the core first; if the core refuses it or does not answer, the app answers it from data kept in the browser and says so on screen. The iBanking tiles have no Figma frames either, but are native too, built from the design's patterns. Other services with no Figma screen (leasing, insurance, taxes…) open as legacy overlays from their menu tiles.
+It talks to the BCEL One core. Every Figma screen is **native**. Where a screen needs a command the core contract does not have yet (approvals, roles, transfers, bills, top-up, salary, e-cheque), the command is sent to the core first; if the core refuses it or does not answer, the app answers it from data kept in the browser and says so on screen. The iBanking tiles have no Figma frames either, but are native too, built from the design's patterns. Other services with no Figma screen (leasing, insurance, taxes…) open as legacy overlays from their menu tiles.
 
 ## Who it is for
 
@@ -44,7 +44,7 @@ Lao is the primary language; English, Chinese and Vietnamese are also available.
 | Join / leave a group | `/group/join`, `/group/leave` | **Native**: show a join code and wait for the owner (socket); leave with a warning |
 | Pending authorization | `/authorization`, `/authorization/history` | **Native**; approve / reject / cancel fall back to local data |
 | Manage permissions | `/role` | **Native** on `getpermissions`; saving a role falls back to local data |
-| Statement | `/statement` | **Native**; falls back to the real transaction list, filtered by account |
+| Statement | `/statement` | **Native** on the core's own `STATEMENT/statement`: a date range walked page by page, searchable, exportable as CSV |
 | Transfer, international, ID card | `/transfer`, `/transfer/interbank`, `/transfer/idcard` | **Native**; submitting falls back to local data |
 | Salary, E-Cheque | `/salary`, `/echeque` | **Native**; falls back to local data |
 | Electricity, Water, Top-up | `/bill/electricity`, `/bill/water`, `/topup` | **Native**; paying falls back to local data |
@@ -60,6 +60,6 @@ Lao is the primary language; English, Chinese and Vietnamese are also available.
 
 ## Out of scope for this build
 
-- **Real money movement for unmapped commands.** Approve / reject, saving a role, statement, transfers, bills, top-up, salary, e-cheque and the iBank screens (rates, deposits, loans, alerts, destination accounts) have no known command in the core contract here. Until they are mapped, what those screens do stays in the browser.
+- **Real money movement for unmapped commands.** Approve / reject, saving a role, transfers, bills, top-up, salary, e-cheque and the iBank screens (rates, deposits, loans, alerts, destination accounts) have no known command in the core contract here. Until they are mapped, what those screens do stays in the browser.
 - **Unread state.** The contract has no read/unread flag, so Messages shows no unread badge.
 - **No mobile app parity.** The mobile app is the separate `onebank-ui` repo.
