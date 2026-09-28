@@ -74,9 +74,10 @@
                 <label class="block">
                     <span class="ob-label">{t(limit.en, limit.lo)}</span>
                     <span class="relative block">
-                        <input class="ob-input pr-14 text-right tabular-nums" inputmode="decimal" placeholder="0.00 ({t('no limit', 'ບໍ່ຈຳກັດ')})"
+                        <!-- `.ob-input` is unlayered, so its own px-4 beats a pr-* utility: keep the bang. -->
+                        <input class="ob-input pr-14! text-right tabular-nums" inputmode="decimal" placeholder={t('No limit', 'ບໍ່ຈຳກັດ')}
                                value={permission.limit?.[limit.key] ?? ''} oninput={(event) => setLimit(limit.key, event.currentTarget.value)}/>
-                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-onebank-subtle">LAK</span>
+                        <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-onebank-subtle">LAK</span>
                     </span>
                 </label>
             {/each}
