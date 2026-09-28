@@ -62,6 +62,7 @@
     const linked = $derived(new URLSearchParams($routeLocation.query).get('account') ?? '');
     const account = $derived(accounts.find((candidate) => candidate.accountid === accountId));
     const locked = $derived(account?.status === 'LOCKED');
+    const isToday = $derived(from === isoDay(today) && to === isoDay(today));
 
     $effect(() => {
         if (!accounts.some((candidate) => candidate.accountid === accountId)) {
@@ -129,6 +130,11 @@
         }));
     });
 
+    function pickToday() {
+        from = isoDay(today);
+        to = from;
+    }
+
     function openFilters() {
         draft = [...filters];
         filterSearch = '';
@@ -176,10 +182,14 @@
             <span class="shrink-0 text-onebank-subtle">{t('To', 'ເຖິງວັນທີ')}</span>
             <input type="date" bind:value={to} min={from} max={isoDay(today)} class="min-w-0 flex-1 border-0 p-0 text-sm focus:ring-0"/>
         </label>
+        <button type="button" aria-pressed={isToday} onclick={pickToday}
+                class="flex h-11 shrink-0 items-center gap-2 rounded-ob-sm border px-4 text-sm transition-colors {isToday ? 'border-onebank-red bg-onebank-pink text-onebank-red' : 'border-[#d9d9d9] bg-white hover:bg-onebank-light-grey'}">
+            <Icon icon="mdi:calendar-today" class="h-5 w-5"/>{t('Today', 'ມື້ນີ້')}
+        </button>
         <label class="relative block min-w-56 flex-1">
-            <span class="sr-only">{t('Search', 'ຊອກຫາ')}</span>
+            <span class="sr-only">{t('Search the rows loaded', 'ຊອກຫາໃນລາຍການທີ່ໂຫລດແລ້ວ')}</span>
             <Icon icon="mdi:magnify" class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-onebank-subtle"/>
-            <input type="search" bind:value={search} placeholder={t('Search these movements', 'ຊອກຫາໃນລາຍການນີ້')}
+            <input type="search" bind:value={search} placeholder={t('Search the rows loaded', 'ຊອກຫາໃນລາຍການທີ່ໂຫລດແລ້ວ')}
                    class="h-11 w-full rounded-ob-sm border border-[#d9d9d9] bg-white pl-10 pr-3 text-sm placeholder:text-onebank-muted focus:border-onebank-red focus:ring-onebank-red"/>
         </label>
         <button type="button" class="relative flex h-11 items-center gap-2 rounded-ob-sm bg-onebank-blue px-4 text-sm text-white" onclick={openFilters}>
@@ -277,7 +287,11 @@
                 <button type="button" class="onebank-secondary-btn h-10 tablet:w-56" disabled={loadingMore} onclick={loadMore}>
                     {loadingMore ? t('Loading…', 'ກຳລັງໂຫລດ…') : t('Load older movements', 'ໂຫລດລາຍການເກົ່າກວ່າ')}
                 </button>
-                <p class="text-xs text-onebank-subtle">{t('This period holds more than one read', 'ໄລຍະນີ້ມີລາຍການຫຼາຍກວ່າໜຶ່ງຄັ້ງໂຫລດ')}</p>
+                <p class="text-xs text-onebank-subtle">
+                    {search.trim() || filters.length
+                        ? t('Older movements are not loaded yet, so they are not searched or filtered', 'ລາຍການເກົ່າກວ່ານີ້ຍັງບໍ່ໄດ້ໂຫລດ, ຈຶ່ງບໍ່ໄດ້ຖືກຊອກຫາ ຫຼື ກັ່ນຕອງ')
+                        : t('This period holds more than one read', 'ໄລຍະນີ້ມີລາຍການຫຼາຍກວ່າໜຶ່ງຄັ້ງໂຫລດ')}
+                </p>
             </div>
         {/if}
     {/if}
