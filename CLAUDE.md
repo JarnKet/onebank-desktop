@@ -119,7 +119,10 @@ every other command. Its rows are `StatementTransaction`, not `TransactionInfo`:
 `summarykey` English). The search box and the filter modal sift the rows already read — the core
 filters nothing, so the modal's chips are built from those rows (direction, plus whichever movement
 codes they carry) and a chip is namespaced by its group's id prefix: chips widen within a group and
-narrow across groups. `src/lib/statement.test.ts` pins the walk and the sifting.
+narrow across groups. **Export is the core's file, not ours**: `downloadfile` takes `YYYYMMDD` days
+and answers base64 PDF or xlsx, so nothing is drawn here; an account it does not render (a shadow
+account) answers with rows instead, which onebank-ui draws with jsPDF and an xlsx template and this
+app says it cannot do. `src/lib/statement.test.ts` pins the walk, the sifting and the export.
 
 **Every call to the core carries a timeout.** `Connector.post()` is the single place that talks to
 `service3.php`; tune with `VITE_REQUEST_TIMEOUT_MS` (default 20000). Transport failures are
@@ -202,7 +205,7 @@ active group tab `aria-current="true"`, a framed route `.route-frame`.
 
 | Gate | State |
 |---|---|
-| `pnpm test` | **404 passing** — a passing gate |
+| `pnpm test` | **411 passing** — a passing gate |
 | `pnpm run check` | **0 errors, 0 warnings** — a passing gate; do not add either |
 | `pnpm build` | passing gate |
 | `pnpm format:check` | failing, pre-existing — not a gate until someone runs `pnpm format` in a commit of its own |

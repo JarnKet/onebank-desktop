@@ -309,6 +309,36 @@ export interface StatementResponse extends ApiEnvelope {
   ccy?: string
 }
 
+/** What a statement can be downloaded as. */
+export type StatementFileType = 'pdf' | 'xlsx'
+
+/** One row of `downloadfile`'s `json`, for an account the core does not render. */
+export interface StatementFileRow {
+  txtime: string
+  amount: number
+  ccy: string
+  service: string
+  ticket: string
+  bank: string
+  merchantname: string
+  fccref: string
+  alias: string
+  description: string
+  fee: number
+  feeccy: string
+}
+
+/**
+ * The core's own rendering of a statement.
+ *
+ * `data` is the finished file, base64. A shadow account has none: the core
+ * answers `json` instead, the rows onebank-ui draws the file from on the device.
+ */
+export interface DownloadStatementResponse extends ApiEnvelope {
+  data?: string
+  json?: StatementFileRow[]
+}
+
 // ------------------------------- for the unmapped screens (see ./unmapped.ts)
 
 export interface ApproveTransactionResponse extends ApiEnvelope {

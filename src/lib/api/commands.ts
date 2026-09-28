@@ -46,7 +46,9 @@ import type {
   Menu,
   RemoveMemberResponse,
   RemovePermissionResponse,
+  DownloadStatementResponse,
   SaveHomeMenusResponse,
+  StatementFileType,
   StatementResponse,
   ViewTransactionsResponse,
   WidgetKind,
@@ -231,6 +233,30 @@ export function statement(accountid: string, beforetime?: string | null, onebank
     transactiontype: 'account',
     accountid,
     beforetime: beforetime ?? null,
+    onebankid: groupId(onebankid),
+  })
+}
+
+/**
+ * The statement as a file the core renders itself: base64 in `data`.
+ *
+ * Days are `YYYYMMDD`, not the ISO the rest of the app passes around. A shadow
+ * account has no rendered statement — the answer carries `json`, the rows
+ * onebank-ui draws the file from on the device, which this app cannot yet do.
+ */
+export function downloadStatement(
+  accountid: string,
+  fromdate: string,
+  todate: string,
+  filetype: StatementFileType,
+  onebankid?: string,
+): Promise<DownloadStatementResponse> {
+  return call<DownloadStatementResponse>(STATEMENT, {
+    command: 'downloadfile',
+    fromdate,
+    todate,
+    filetype,
+    accountid,
     onebankid: groupId(onebankid),
   })
 }

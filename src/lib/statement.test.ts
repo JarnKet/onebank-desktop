@@ -7,8 +7,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { setTransport } from './api/client'
 import type { StatementTransaction } from './api/types'
+import type { Account } from '../definition'
 import {
+  base64ToBlob,
+  compactDay,
   endOfDay,
+  exportFileName,
+  exportStatement,
   filterGroups,
   filterLabel,
   loadRange,
@@ -210,5 +215,58 @@ describe('the filter chips', () => {
     const groups = filterGroups(rows)
     expect(filterLabel(groups, typeFilterId('TRI'))).toBe('TRI — Transfer in')
     expect(filterLabel(groups, 'DIR:IN')).toBe('Money in')
+  })
+})
+
+describe('the export', () => {
+  const account = {
+    accountid: 'A1',
+    account: '010120000000000001',
+    alias: 'petty',
+    ccy: 'LAK',
+    name: 'ACME',
+    type: 'SAVING',
+    viewonly: 0,
+    maskedAccount: '****0001',
+  } satisfies Account
+
+  it('asks the core for the file it renders itself, in YYYYMMDD', async () => {
+    const sent: Array<Record<string, unknown>> = []
+    setTransport(async (_service, data) => {
+      sent.push(data)
+      return { result: 0, data: btoa('a pdf') }
+    })
+    expect(await exportStatement(account, '2025-07-01', '2025-07-15', 'pdf')).toEqual({ ok: true })
+    expect(sent[0]).toMatchObject({ command: 'downloadfile', fromdate: '20250701', todate: '20250715', filetype: 'pdf', accountid: 'A1' })
+  })
+
+  it('names the file as onebank-ui does, with the extension it leaves off', () => {
+    expect(compactDay('2025-07-01')).toBe('20250701')
+    expect(exportFileName(account, '2025-07-01', '2025-07-15', 'xlsx')).toBe('STATEMENT_petty_20250701_20250715.xlsx')
+    expect(exportFileName({ ...account, alias: '' }, '2025-07-01', '2025-07-15', 'pdf')).toBe(
+      'STATEMENT_010120000000000001_20250701_20250715.pdf',
+    )
+  })
+
+  it('decodes the base64 into a file of the right type', () => {
+    expect(base64ToBlob(btoa('hello'), 'pdf').type).toBe('application/pdf')
+    expect(base64ToBlob(btoa('hello'), 'xlsx').type).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    expect(base64ToBlob(btoa('hello'), 'pdf').size).toBe(5)
+  })
+
+  it('passes a refusal back with the message', async () => {
+    setTransport(async () => ({ result: 9, message: 'Not permitted' }))
+    expect(await exportStatement(account, '2025-07-01', '2025-07-15', 'pdf')).toEqual({ ok: false, message: 'Not permitted' })
+  })
+
+  it('says so rather than save something else when the core sends rows, not a file', async () => {
+    setTransport(async () => ({ result: 0, json: [{ txtime: '2025-07-01', amount: -1 }] }))
+    const result = await exportStatement(account, '2025-07-01', '2025-07-15', 'pdf')
+    expect(result.ok).toBe(false)
+    expect(result.message).toBe('This account has no downloadable statement yet')
+  })
+
+  it('needs an account', async () => {
+    expect((await exportStatement(undefined, '2025-07-01', '2025-07-15', 'pdf')).ok).toBe(false)
   })
 })

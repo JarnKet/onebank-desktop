@@ -61,6 +61,19 @@ describe('service routing', () => {
     expect(last().data.beforetime).toBe('14/07/2025 09:51:31')
   })
 
+  it('asks STATEMENT for the file the core renders, in YYYYMMDD', async () => {
+    await api.downloadStatement('A1', '20250701', '20250715', 'xlsx')
+    expect(last().service).toBe('STATEMENT')
+    expect(last().data).toEqual({
+      command: 'downloadfile',
+      fromdate: '20250701',
+      todate: '20250715',
+      filetype: 'xlsx',
+      accountid: 'A1',
+      onebankid: 'GROUP-1',
+    })
+  })
+
   it('sends opening an account to ONEBANK', async () => {
     await api.openNewAccount({ accountType: 'SHADOW', accountid: 'A1', alias: 'petty' })
     expect(last().service).toBe('ONEBANK')
@@ -229,7 +242,7 @@ describe('loadWidget', () => {
 })
 
 describe('every command reaches the wire exactly once', () => {
-  it('covers all 18 commands of the contract', async () => {
+  it('covers all 19 commands of the contract', async () => {
     await api.loadHome()
     await api.saveHomeMenus([])
     await api.loadWidget('ACCOUNTBALANCES')
@@ -248,10 +261,11 @@ describe('every command reaches the wire exactly once', () => {
     await api.getPendingApprovals()
     await api.getApprovalDetail('x')
     await api.statement('A1')
+    await api.downloadStatement('A1', '20250701', '20250715', 'pdf')
 
     const commands = sent.map((s) => s.data.command)
-    expect(commands).toHaveLength(18)
-    expect(new Set(commands).size).toBe(18)
+    expect(commands).toHaveLength(19)
+    expect(new Set(commands).size).toBe(19)
   })
 })
 

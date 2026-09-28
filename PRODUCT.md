@@ -44,7 +44,7 @@ Lao is the primary language; English, Chinese and Vietnamese are also available.
 | Join / leave a group | `/group/join`, `/group/leave` | **Native**: show a join code and wait for the owner (socket); leave with a warning |
 | Pending authorization | `/authorization`, `/authorization/history` | **Native**; approve / reject / cancel fall back to local data |
 | Manage permissions | `/role` | **Native** on `getpermissions`; saving a role falls back to local data |
-| Statement | `/statement` | **Native** on the core's own `STATEMENT/statement`: a date range walked page by page, searchable, exportable as CSV |
+| Statement | `/statement` | **Native** on the core's own `STATEMENT/statement`: a date range walked page by page, searchable; exported as the PDF or Excel file the core renders |
 | Transfer, international, ID card | `/transfer`, `/transfer/interbank`, `/transfer/idcard` | **Native**; submitting falls back to local data |
 | Salary, E-Cheque | `/salary`, `/echeque` | **Native**; falls back to local data |
 | Electricity, Water, Top-up | `/bill/electricity`, `/bill/water`, `/topup` | **Native**; paying falls back to local data |

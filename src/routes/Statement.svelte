@@ -11,10 +11,11 @@
     import Icon from '@iconify/svelte';
     import AccountPicker from '../lib/components/AccountPicker.svelte';
     import Modal from '../lib/components/Modal.svelte';
-    import type {StatementTransaction} from '../lib/api/types';
+    import type {StatementFileType, StatementTransaction} from '../lib/api/types';
     import {formatMoney, isoDay, lang, money, t} from '../lib/utils/helper';
     import {
         endOfDay,
+        exportStatement,
         filterGroups,
         filterLabel,
         loadRange,
@@ -47,6 +48,12 @@
     let draft = $state<string[]>([]);
     let filterOpen = $state(false);
     let filterSearch = $state('');
+    let exportOpen = $state(false);
+    let exportFrom = $state('');
+    let exportTo = $state('');
+    let exportType = $state<StatementFileType>('pdf');
+    let exporting = $state(false);
+    let exportError = $state('');
     /** A range walk is many round trips; only the newest one may land. */
     let reading = 0;
 
@@ -128,30 +135,21 @@
         filterOpen = true;
     }
 
-    function exportCsv() {
-        const rows = [['Date', 'Time', 'Type', 'Reference', 'Amount', 'Currency', 'Balance', 'Description', 'Details']];
-        for (const row of filtered) {
-            const when = statementTime(row.time);
-            const details = rowDetails(row, lang === 1)
-                .map(([label, value]) => `${label}: ${value}`)
-                .join('; ');
-            rows.push([
-                when.date,
-                when.time,
-                row.type ?? '',
-                rowReference(row),
-                String(row.amount),
-                ccy,
-                String(row.balance ?? ''),
-                [row.title, row.subtitle].filter(Boolean).join(' — '),
-                details,
-            ]);
-        }
-        const csv = rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(',')).join('\n');
-        const url = URL.createObjectURL(new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8'}));
-        const link = Object.assign(document.createElement('a'), {href: url, download: `statement-${from}-${to}.csv`});
-        link.click();
-        URL.revokeObjectURL(url);
+    function openExport() {
+        exportFrom = from;
+        exportTo = to;
+        exportType = 'pdf';
+        exportError = '';
+        exportOpen = true;
+    }
+
+    async function runExport() {
+        exporting = true;
+        exportError = '';
+        const result = await exportStatement(account, exportFrom, exportTo, exportType);
+        exporting = false;
+        if (result.ok) exportOpen = false;
+        else exportError = result.message ?? t('The statement could not be exported', 'ບໍ່ສາມາດສົ່ງອອກລາຍການໄດ້');
     }
 </script>
 
@@ -191,8 +189,8 @@
             {/if}
         </button>
         <button type="button" class="flex h-11 items-center gap-2 rounded-ob-sm bg-onebank-blue px-4 text-sm text-white disabled:opacity-50"
-                disabled={filtered.length === 0} onclick={exportCsv}>
-            <Icon icon="mdi:file-export-outline" class="h-5 w-5"/>Export
+                disabled={!account} onclick={openExport}>
+            <Icon icon="mdi:file-export-outline" class="h-5 w-5"/>{t('Export', 'ສົ່ງອອກ')}
         </button>
     </div>
 
@@ -315,6 +313,44 @@
         {#snippet footer()}
             <button type="button" class="onebank-secondary-btn h-10 tablet:w-36" onclick={() => (draft = [])}>{t('Clear', 'ລ້າງ')}</button>
             <button type="button" class="onebank-primary-btn h-10 tablet:w-44" onclick={() => { filters = [...draft]; filterOpen = false; }}>{t('Apply', 'ຕົກລົງ')}</button>
+        {/snippet}
+    </Modal>
+{/if}
+
+{#if exportOpen}
+    <Modal title={t('Export transactions', 'ສົ່ງອອກທຸລະກຳ')} onClose={() => (exportOpen = false)}>
+        <h3 class="mb-3 text-sm">{t('Date range', 'ຊ່ວງວັນທີ')}</h3>
+        <div class="flex flex-col gap-3 tablet:flex-row">
+            <label class="flex h-11 flex-1 items-center gap-2 rounded-ob-sm border border-[#d9d9d9] px-3 text-sm">
+                <span class="shrink-0 text-onebank-subtle">{t('From', 'ຈາກວັນທີ')}</span>
+                <input type="date" bind:value={exportFrom} max={exportTo} class="min-w-0 flex-1 border-0 p-0 text-sm focus:ring-0"/>
+            </label>
+            <label class="flex h-11 flex-1 items-center gap-2 rounded-ob-sm border border-[#d9d9d9] px-3 text-sm">
+                <span class="shrink-0 text-onebank-subtle">{t('To', 'ເຖິງວັນທີ')}</span>
+                <input type="date" bind:value={exportTo} min={exportFrom} max={isoDay(today)} class="min-w-0 flex-1 border-0 p-0 text-sm focus:ring-0"/>
+            </label>
+        </div>
+
+        <h3 class="mb-3 mt-5 text-sm">{t('Format', 'ຮູບແບບ')}</h3>
+        <div class="flex gap-3">
+            {#each [{type: 'pdf', label: 'PDF', icon: 'mdi:file-pdf-box'}, {type: 'xlsx', label: 'Excel', icon: 'mdi:file-excel-box'}] as choice (choice.type)}
+                {@const on = exportType === choice.type}
+                <button type="button" aria-pressed={on} onclick={() => (exportType = choice.type as StatementFileType)}
+                        class="flex flex-1 flex-col items-center gap-2 rounded-ob-sm border p-4 transition-colors {on ? 'border-onebank-red bg-onebank-pink' : 'border-[#d9d9d9] hover:bg-onebank-light-grey'}">
+                    <Icon icon={choice.icon} class="h-8 w-8 {on ? 'text-onebank-red' : 'text-onebank-subtle'}"/>
+                    <span class="text-sm font-semibold">{choice.label}</span>
+                </button>
+            {/each}
+        </div>
+        <p class="mt-4 text-xs text-onebank-subtle">{t('The bank builds the file; the filters above are not applied to it.', 'ທະນາຄານສ້າງໄຟລ໌ນີ້, ຕົວກັ່ນຕອງຂ້າງເທິງບໍ່ໄດ້ນຳໃຊ້ກັບໄຟລ໌.')}</p>
+        {#if exportError}
+            <p class="mt-3 rounded-ob-sm bg-onebank-pink px-4 py-3 text-sm text-onebank-red">{exportError}</p>
+        {/if}
+        {#snippet footer()}
+            <button type="button" class="onebank-secondary-btn h-10 tablet:w-36" disabled={exporting} onclick={() => (exportOpen = false)}>{t('Cancel', 'ຍົກເລີກ')}</button>
+            <button type="button" class="onebank-primary-btn h-10 tablet:w-44" disabled={exporting || !exportFrom || !exportTo} onclick={runExport}>
+                {exporting ? t('Exporting…', 'ກຳລັງສົ່ງອອກ…') : t('Export', 'ສົ່ງອອກ')}
+            </button>
         {/snippet}
     </Modal>
 {/if}

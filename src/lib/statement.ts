@@ -12,8 +12,9 @@
  */
 
 import { isOk } from './api/client'
-import { statement } from './api/commands'
-import type { StatementTransaction } from './api/types'
+import { downloadStatement, statement } from './api/commands'
+import type { StatementFileType, StatementTransaction } from './api/types'
+import type { Account } from '../definition'
 import { t } from './utils/helper'
 
 /** `DD/MM/YYYY` and `HH:MM:SS` from a statement row's `time`. */
@@ -200,4 +201,67 @@ export function matchesFilters(row: StatementTransaction, ids: string[], groups:
     const chosen = ids.filter((id) => id.startsWith(group.prefix))
     return !chosen.length || group.idsFor(row).some((id) => chosen.includes(id))
   })
+}
+
+// ----------------------------------------------------------------- the export
+
+/** `YYYYMMDD`, the only day format `downloadfile` takes. */
+export function compactDay(isoDay: string): string {
+  return isoDay.replaceAll('-', '')
+}
+
+/** The name onebank-ui saves a statement under, plus the extension it omits. */
+export function exportFileName(account: Account | undefined, from: string, to: string, filetype: StatementFileType): string {
+  const who = account?.alias || account?.account || 'ACCOUNT'
+  return `STATEMENT_${who}_${compactDay(from)}_${compactDay(to)}.${filetype}`
+}
+
+const MIME: Record<StatementFileType, string> = {
+  pdf: 'application/pdf',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+}
+
+export function base64ToBlob(base64: string, filetype: StatementFileType): Blob {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: MIME[filetype] })
+}
+
+export interface ExportResult {
+  ok: boolean
+  message?: string
+}
+
+/**
+ * Asks the core for the file and hands it to the browser.
+ *
+ * Nothing is drawn here: the core renders both formats. An account it does not
+ * render answers with rows (`json`) instead, and onebank-ui builds the file from
+ * them on the device with jsPDF and an xlsx template — not ported, so say so
+ * rather than save something else.
+ */
+export async function exportStatement(
+  account: Account | undefined,
+  from: string,
+  to: string,
+  filetype: StatementFileType,
+): Promise<ExportResult> {
+  if (!account) return { ok: false, message: t('Choose an account first', 'ກະລຸນາເລືອກບັນຊີກ່ອນ') }
+  const response = await downloadStatement(account.accountid, compactDay(from), compactDay(to), filetype)
+  if (!isOk(response)) return { ok: false, message: response?.message }
+  if (!response.data) {
+    return response.json
+      ? { ok: false, message: t('This account has no downloadable statement yet', 'ບັນຊີນີ້ຍັງບໍ່ສາມາດດາວໂຫລດລາຍການໄດ້') }
+      : { ok: false, message: t('The bank sent no file', 'ທະນາຄານບໍ່ໄດ້ສົ່ງໄຟລ໌ມາ') }
+  }
+  saveFile(base64ToBlob(response.data, filetype), exportFileName(account, from, to, filetype))
+  return { ok: true }
+}
+
+function saveFile(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const link = Object.assign(document.createElement('a'), { href: url, download: filename })
+  link.click()
+  URL.revokeObjectURL(url)
 }
