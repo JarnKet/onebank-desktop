@@ -60,7 +60,7 @@
             </aside>
         {/if}
 
-        <main class="min-w-0 flex-1 overflow-y-auto pb-4 pt-2 desktop:pb-6">
+        <main class="min-w-0 flex-1 overflow-y-auto pb-4 pt-2 desktop:pb-6 mb-4">
             {@render children?.()}
         </main>
     </div>
